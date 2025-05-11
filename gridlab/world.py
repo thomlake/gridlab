@@ -122,8 +122,8 @@ class AbstractWorld:
         if self.view_systems is None:
             self.view_systems = [
                 view.DescriptionSystem(),
-                # view.ASCIIRichRenderSystem(),
-                view.ASCIIRenderSystem(),
+                view.ASCIIRichRenderSystem(),
+                # view.ASCIIRenderSystem(),
             ]
 
         for view_sys in self.view_systems:

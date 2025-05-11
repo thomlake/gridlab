@@ -40,17 +40,17 @@ def make_bold(value):
 
 ENTITY_ASCII_MAP = {
     Entity.PLAYER: '@',
-    Entity.GOAL: 'o',
+    Entity.GOAL: 'X',
     Entity.KEY: 'k',
     Entity.TIMER_RESET: '+',
     Entity.ENEMY: 'e',
     Entity.SPIKE: '^',
     Entity.WALL: '|',
     Entity.BLOCK: '#',
-    Entity.DOOR: '!',
+    Entity.DOOR: '/',
     Entity.EMPTY: '.',
     Entity.GOAL_REACHED: '*',
-    Entity.PLAYER_DIED: 'X',
+    Entity.PLAYER_DIED: '_',
 }
 
 ENTITY_ASCII_REPLACEMENTS = {
@@ -92,19 +92,34 @@ DARK_GRAY = '#787C85'
 LIGHT_GRAY = '#E4E4E4'
 
 
+# ENTITY_COLOR_MAP = {
+#     Entity.PLAYER: INDIGO,
+#     Entity.GOAL: PINK,
+#     Entity.KEY: TEAL,
+#     Entity.TIMER_RESET: TEAL,
+#     Entity.ENEMY: PURPLE,
+#     Entity.SPIKE: PURPLE,
+#     Entity.WALL: DARK_GRAY,
+#     Entity.BLOCK: DARK_GRAY,
+#     Entity.DOOR: DARK_GRAY,
+#     Entity.EMPTY: LIGHT_GRAY,
+#     Entity.GOAL_REACHED: PINK,
+#     Entity.PLAYER_DIED: INDIGO,
+# }
+
 ENTITY_COLOR_MAP = {
-    Entity.PLAYER: INDIGO,
-    Entity.GOAL: PINK,
+    Entity.PLAYER: PURPLE,
+    Entity.GOAL: TEAL,
     Entity.KEY: TEAL,
     Entity.TIMER_RESET: TEAL,
-    Entity.ENEMY: PURPLE,
-    Entity.SPIKE: PURPLE,
+    Entity.ENEMY: PINK,
+    Entity.SPIKE: PINK,
     Entity.WALL: DARK_GRAY,
     Entity.BLOCK: DARK_GRAY,
     Entity.DOOR: DARK_GRAY,
     Entity.EMPTY: LIGHT_GRAY,
-    Entity.GOAL_REACHED: PINK,
-    Entity.PLAYER_DIED: INDIGO,
+    Entity.GOAL_REACHED: TEAL,
+    Entity.PLAYER_DIED: PINK,
 }
 
 
