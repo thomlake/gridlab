@@ -25,6 +25,12 @@ class Position:
 
 
 @dataclass
+class MovementRequest:
+    x: int
+    y: int
+
+
+@dataclass
 class PositionDelta:
     """Most recent change in a entity's position (cleared before the MovementSystem executes)."""
     x: int

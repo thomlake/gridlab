@@ -1,6 +1,6 @@
 from gridlab.entity import Entity
 
-ENTITY_DESCRIPTION_TEMPLATE_MAP = {
+DESCRIPTION_TEMPLATE_MAP = {
     Entity.PLAYER: 'You are at ({pos.x}, {pos.y})',
     Entity.GOAL: 'A goal is at ({pos.x}, {pos.y})',
     Entity.KEY: 'A key is at ({pos.x}, {pos.y})',

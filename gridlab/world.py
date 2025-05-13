@@ -1,43 +1,52 @@
 from typing import Callable
 
-from gridlab import component, system, view
+from gridlab import component, system
+from gridlab.action import Action
 from gridlab.entity import Entity, EntityManager
 from gridlab.grid import Grid
-from gridlab.interface import Actor, Observer, TerminalActor, TerminalObserver
 from gridlab.state import State
 
 
-class AbstractWorld:
+class World:
     state: State
     em: EntityManager
     grid: Grid
-    mech_systems: list[Callable[[], None]]
-    view_systems: list[Callable[[], None]] | None = None
-    actor: Actor | None = None
-    observer: Observer | None = None
+    action_system: system.ActionSystem
+    systems: list[Callable[[], None]]
     player: int | None = None
+
+    def __init__(self):
+        self.reset()
 
     def solve(self) -> list[tuple[int, int]]:
         """Return the list of moves that result in success."""
         raise NotImplementedError()
 
-    def initialize(self, *, shape: tuple[int, int] | None = None, layout: str | None = None):
+    def reset(self):
         self.state = State()
         self.em = EntityManager()
+        self.grid = None
+        self.action_system = None
+        self.systems = []
         self.player = None
+        self.layout()
+        self.setup_systems()
 
-        if layout is not None:
-            self._init_grid_from_layout(layout)
-        elif shape is not None:
-            w, h = shape
-            self.grid = Grid(w, h)
+    def initialize(self, *, shape: tuple[int, int] | None = None, text_grid: str | None = None):
+        if text_grid:
+            self.init_from_text_grid(text_grid)
+        elif shape:
+            self.create_grid(*shape)
         else:
-            raise ValueError('shape or layout must be provided')
+            raise ValueError('shape of text_grid must be specified')
 
-    def _init_grid_from_layout(self, layout: str):
-        lines = [line.strip() for line in layout.strip().split('\n')]
+    def create_grid(self, width: int, height: int):
+        self.grid = Grid(width, height)
+
+    def init_from_text_grid(self, text_grid: str):
+        lines = [line.strip() for line in text_grid.strip().split('\n')]
         w, h = len(lines[0]), len(lines)
-        self.grid = Grid(w, h)
+        self.create_grid(w, h)
 
         for y, line in enumerate(lines):
             for x, char in enumerate(line):
@@ -60,18 +69,25 @@ class AbstractWorld:
                 elif char != '.':
                     raise ValueError(f'unknown symbol {char}')
 
-    def run(self):
-        self.initialize()
-        assert self.player is not None
-        self.setup_systems()
+    def step(
+            self,
+            player_action: Action | None = None,
+            actions: list[tuple[int, Action]] | None = None,
+    ):
+        if self.state.is_finished:
+            return False
 
-        for s in self.view_systems:
+        _actions = []
+        if player_action is not None:
+            _actions.append((self.player, player_action))
+
+        if actions is not None:
+            _actions.extend(actions)
+
+        self.action_system.add_actions(_actions)
+
+        for s in self.systems:
             s()
-
-        systems = self.mech_systems + self.view_systems
-        while not self.state.is_finished:
-            for s in systems:
-                s()
 
     def setup_systems(self):
         def on_player_death():
@@ -90,44 +106,32 @@ class AbstractWorld:
 
         self.state.goal_reached_callbacks.append(on_goal_reached)
 
-        actor = self.actor or TerminalActor()
-        observer = self.observer or TerminalObserver()
+        action_system = system.ActionSystem(self.em, self.state, player=self.player)
+        movement_system = system.MovementSystem(self.em, self.state, grid=self.grid)
 
-        input_sys = system.InputSystem(self.em, self.state, actor=actor, player=self.player)
-        movement_sys = system.MovementSystem(self.em, self.state, grid=self.grid)
+        patrol_ai_system = system.PatrolAISystem(self.em, self.state)
+        mirror_ai_system = system.MirrorAISystem(self.em, self.state)
+        chase_ai_system = system.ChaseAISystem(self.em, self.state, grid=self.grid)
 
-        patrol_ai_sys = system.PatrolAISystem(self.em, self.state)
-        mirror_ai_sys = system.MirrorAISystem(self.em, self.state)
-        chase_ai_sys = system.ChaseAISystem(self.em, self.state, grid=self.grid)
+        death_system = system.DeathSystem(self.em, self.state, player=self.player)
+        goal_system = system.GoalSystem(self.em, self.state, player=self.player)
+        timer_system = system.TimerSystem(self.em, self.state, player=self.player)
+        door_system = system.DoorSystem(self.em, self.state)
 
-        death_sys = system.DeathSystem(self.em, self.state, player=self.player)
-        goal_sys = system.GoalSystem(self.em, self.state, player=self.player)
-        timer_sys = system.TimerSystem(self.em, self.state, player=self.player)
-        door_sys = system.DoorSystem(self.em, self.state)
-
-        self.mech_systems = [
-            input_sys,
-            movement_sys,
-            death_sys,
-            patrol_ai_sys,
-            mirror_ai_sys,
-            chase_ai_sys,
-            movement_sys,
-            door_sys,
-            death_sys,
-            goal_sys,
-            timer_sys,
+        self.action_system = action_system
+        self.systems = [
+            action_system,
+            movement_system,
+            death_system,
+            patrol_ai_system,
+            mirror_ai_system,
+            chase_ai_system,
+            movement_system,
+            door_system,
+            death_system,
+            goal_system,
+            timer_system,
         ]
-
-        if self.view_systems is None:
-            self.view_systems = [
-                view.DescriptionSystem(),
-                view.ASCIIRichRenderSystem(),
-                # view.ASCIIRenderSystem(),
-            ]
-
-        for view_sys in self.view_systems:
-            view_sys.initialize(em=self.em, grid=self.grid, observer=observer)
 
     def register_player(self, ent: int):
         if self.player is not None:

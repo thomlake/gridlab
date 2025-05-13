@@ -1,3 +1,4 @@
+from gridlab.action import Action
 from gridlab.component import (
     ChaseAI,
     Deadly,
@@ -6,6 +7,7 @@ from gridlab.component import (
     KeyCollector,
     Goal,
     MirrorAI,
+    MovementRequest,
     PatrolAI,
     Position,
     PositionDelta,
@@ -17,28 +19,41 @@ from gridlab.component import (
 )
 from gridlab.entity import EntityManager
 from gridlab.grid import Grid
-from gridlab.interface import Actor
-from gridlab.request import MovementRequest
 from gridlab.state import State
 from gridlab import a_star
 
 
-class InputSystem:
-    def __init__(self, em: EntityManager, state: State, actor: Actor, player: int):
+class ActionSystem:
+    def __init__(self, em: EntityManager, state: State, player: int):
         self.em = em
         self.state = state
-        self.actor = actor
         self.player = player
+        self.action_queue: list[tuple[str, Action]] = []
+
+    def add_actions(self, actions: list[tuple[str, Action]]):
+        self.action_queue.extend(actions)
 
     def __call__(self):
         if self.state.is_finished:
             return
 
-        movement_request = self.actor.get_action()
-        if movement_request is None:
-            self.state.terminated = True
-        else:
-            self.em.add_component(self.player, movement_request)
+        for ent, action in self.action_queue:
+            components = []
+            if action == Action.UP:
+                components.append(MovementRequest(0, -1))
+            elif action == Action.DOWN:
+                components.append(MovementRequest(0, 1))
+            elif action == Action.LEFT:
+                components.append(MovementRequest(-1, 0))
+            elif action == Action.RIGHT:
+                components.append(MovementRequest(1, 0))
+            else:
+                raise ValueError(f'unknown action {action}')
+
+            for component in components:
+                self.em.add_component(ent, component)
+
+        self.action_queue.clear()
 
 
 class ChaseAISystem:
@@ -254,7 +269,7 @@ class MovementSystem:
 
         movement_request_map.clear()
 
-    def move(self, ent, dx, dy):
+    def move(self, ent, dx, dy) -> bool:
         position_map: dict[int, Position] = self.em.get(Position)
         pusher_map: dict[int, Pusher] = self.em.get(Pusher)
         pushable_map: dict[int, Pushable] = self.em.get(Pushable)
@@ -274,15 +289,14 @@ class MovementSystem:
         ]
 
         for other in blockers:
-            # a) If pushable, try to push it
+            # If pushable, try to push it
             if other in pushable_map:
                 if ent not in pusher_map:
                     return False  # couldn't push
-
-                if not self.move(other, dx, dy):
+                elif not self.move(other, dx, dy):
                     return False  # couldn't push
 
-            # b) If solid (and not pushable), block movement
+            # Otherwise, block movement
             solid = solid_map.get(other)
             if solid and ent not in solid.allow:
                 return False

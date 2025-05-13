@@ -1,3 +1,6 @@
+import string
+from enum import StrEnum
+
 from colorist import BgColorHex, ColorHex, Effect
 
 from gridlab.entity import Entity
@@ -38,7 +41,7 @@ def make_bold(value):
 #
 
 
-ENTITY_ASCII_MAP = {
+CHAR_MAP = {
     Entity.PLAYER: '@',
     Entity.GOAL: 'X',
     Entity.KEY: 'k',
@@ -53,7 +56,7 @@ ENTITY_ASCII_MAP = {
     Entity.PLAYER_DIED: '_',
 }
 
-ENTITY_ASCII_REPLACEMENTS = {
+PRETTY_CHAR_REPLACEMENTS = {
     Entity.WALL: '█',
 }
 
@@ -107,7 +110,9 @@ LIGHT_GRAY = '#E4E4E4'
 #     Entity.PLAYER_DIED: INDIGO,
 # }
 
-ENTITY_COLOR_MAP = {
+BACKGROUND_COLOR = WHITE
+
+COLOR_MAP = {
     Entity.PLAYER: PURPLE,
     Entity.GOAL: TEAL,
     Entity.KEY: TEAL,
@@ -123,22 +128,70 @@ ENTITY_COLOR_MAP = {
 }
 
 
-def make_rich_status(v: str):
-    return color_background(color_foreground(v, WHITE), DARK_GRAY)
-
-
-def make_rich_entity_symbol(k: Entity, v: str | list[str]):
-    if isinstance(v, list):
-        return [make_rich_entity_symbol(s) for s in v]
-
-    v = ENTITY_ASCII_REPLACEMENTS.get(k, v)
-
-    if k != Entity.EMPTY:
+def make_pretty_char(e: Entity, v: str):
+    if e != Entity.EMPTY:
         v = make_bold(v)
 
-    v = color_foreground(v, ENTITY_COLOR_MAP.get(k))
-    v = color_background(v, '#ffffff')
+    v = color_foreground(v, COLOR_MAP.get(e))
+    v = color_background(v, WHITE)
     return v
 
 
-ENTITY_RICH_ASCII_MAP = {k: make_rich_entity_symbol(k, v) for k, v in ENTITY_ASCII_MAP.items()}
+def make_pretty_char_map():
+    char_map = {}
+    for e, v in CHAR_MAP.items():
+        v = PRETTY_CHAR_REPLACEMENTS.get(e, v)
+        char_map[e] = make_pretty_char(e, v)
+
+    return char_map
+
+
+PRETTY_CHAR_MAP = make_pretty_char_map()
+
+
+class Style(StrEnum):
+    PLAIN = 'plain'
+    PRETTY = 'pretty'
+
+
+STYLES = {
+    Style.PLAIN: CHAR_MAP,
+    Style.PRETTY: PRETTY_CHAR_MAP,
+}
+
+
+def get_char_map(style: Style):
+    return STYLES[style]
+
+
+# class TextGridSymbols:
+#     def __init__(
+#             self,
+#             *,
+#             char_map: dict[Entity, str] | None = None,
+#             color_map: dict[Entity, str] | None = None,
+#     ):
+#         self.char_map = char_map
+#         self.color_map = color_map
+
+#     def randomize(self):
+
+
+# def randomize_char_map(choices: str | None = None):
+#     entities_to_keep = {Entity.EMPTY}
+#     entities_to_replace = {e for e in self.char_map.keys() if e not in entities_to_keep}
+
+#     if choices is None:
+#         choices = string.ascii_letters + string.digits + string.punctuation
+
+#     new_char_map = {}
+#     for e in entities_to_keep:
+#         s = self.char_map[e]
+#         new_char_map[e] = s
+#         choices = choices.replace(s, '')
+
+#     chosen = random.sample(choices, k=len(entities_to_replace))
+#     for e, s in zip(entities_to_replace, chosen):
+#         new_char_map[e] = s
+
+#     self.char_map = new_char_map

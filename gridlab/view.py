@@ -3,35 +3,29 @@ import string
 from abc import ABC, abstractmethod
 
 from gridlab.component import Identity, KeyCollector, Position, Timer
-from gridlab.description import ENTITY_DESCRIPTION_TEMPLATE_MAP
-from gridlab.entity import Entity, EntityManager
-from gridlab.visuals import ENTITY_ASCII_MAP, ENTITY_RICH_ASCII_MAP
-from gridlab.grid import Grid
-from gridlab.interface import Observer
+from gridlab.description import DESCRIPTION_TEMPLATE_MAP
+from gridlab.entity import Entity
+from gridlab.visuals import Style, get_char_map
+from gridlab.world import World
 
 
-class ViewSystem(ABC):
-    em: EntityManager
-    grid: Grid
-    observer: Observer
-
-    def initialize(self, em: EntityManager, grid: Grid, observer: Observer):
-        self.em = em
-        self.grid = grid
-        self.observer = observer
-
+class View(ABC):
     @abstractmethod
-    def __call__(self) -> str:
+    def __call__(self, world: World) -> str:
         pass
 
 
-class DescriptionSystem(ViewSystem):
-    def __call__(self) -> str:
-        id_map: dict[int, Identity] = self.em.get(Identity)
-        pos_map: dict[int, Position] = self.em.get(Position)
-        timer_map: dict[int, Timer] = self.em.get(Timer)
-        key_collector_map: dict[int, KeyCollector] = self.em.get(KeyCollector)
-        width, height = self.grid.width, self.grid.height
+class TextDescription(View):
+    def __init__(self, templates: dict[Entity, str] | None = None):
+        templates = templates or {}
+        self.templates = {**DESCRIPTION_TEMPLATE_MAP, **templates}
+
+    def __call__(self, world: World) -> str:
+        width, height = world.grid.width, world.grid.height
+        id_map: dict[int, Identity] = world.em.get(Identity)
+        pos_map: dict[int, Position] = world.em.get(Position)
+        timer_map: dict[int, Timer] = world.em.get(Timer)
+        key_collector_map: dict[int, KeyCollector] = world.em.get(KeyCollector)
 
         lines = []
         lines.append(f'The grid is {width} tiles wide and {height} tiles high.')
@@ -45,44 +39,33 @@ class DescriptionSystem(ViewSystem):
             lines.append(f'You have {key_collector.count} keys.')
 
         for e, id in id_map.items():
-            template = ENTITY_DESCRIPTION_TEMPLATE_MAP.get(id.type)
+            template = self.templates.get(id.type)
             if template:
                 line = template.format(pos=pos_map.get(e))
                 lines.append(line)
 
         value = '\n'.join(lines)
-        self.observer.observe(value)
+        return value
 
 
-BORDER_MAP = {}
-BORDER_MAP['blank'] = [
-    '   ',
-    '  ',
-    '   ',
-]
-BORDER_MAP['simple'] = [
-    ' ⎽ ',
-    '||',
-    ' ⎺ ',
-]
+class TextGrid(View):
+    def __init__(
+            self,
+            *,
+            style: Style = Style.PRETTY,
+            char_map: dict[Entity, str] | None = None,
+    ):
+        base_char_map = dict(get_char_map(style=style))
+        char_map = char_map or {}
+        self.char_map = {**base_char_map, **char_map}
 
-
-def add_boarder(grid: list[list[str]], style='blank'):
-    t, m, b = BORDER_MAP[style]
-    top = [t[0], *(len(grid[0])*t[1]), t[2]]
-    bottom = [b[0], *(len(grid[-1])*b[1]), b[2]]
-    grid = [[m[0], *row, m[1]] for row in grid]
-    return [top] + grid + [bottom]
-
-
-class ASCIIRenderSystem(ViewSystem):
-    char_map: dict[Entity, str] = ENTITY_ASCII_MAP
-
-    def randomize_char_map(self):
+    def randomize_char_map(self, choices: str | None = None):
         entities_to_keep = {Entity.EMPTY}
         entities_to_replace = {e for e in self.char_map.keys() if e not in entities_to_keep}
 
-        choices = string.ascii_letters + string.digits + string.punctuation
+        if choices is None:
+            choices = string.ascii_letters + string.digits + string.punctuation
+
         new_char_map = {}
         for e in entities_to_keep:
             s = self.char_map[e]
@@ -95,48 +78,83 @@ class ASCIIRenderSystem(ViewSystem):
 
         self.char_map = new_char_map
 
-    def layout_grid(self) -> list[list[str]]:
-        id_map: dict[int, Identity] = self.em.get(Identity)
-        pos_map: dict[int, Position] = self.em.get(Position)
-        width, height = self.grid.width, self.grid.height
-        empty = self.char_map[Entity.EMPTY]
-        grid = [[empty for _ in range(width)] for _ in range(height)]
-        for e, id in id_map.items():
-            pos = pos_map.get(e)
-            if not pos:
-                continue
+    def create_legend(self, world: World) -> str:
+        id_map: dict[int, Identity] = world.em.get(Identity)
+        entity_types = set()
+        for v in id_map.values():
+            entity_types.add(v.type)
 
-            grid[pos.y][pos.x] = self.char_map[id.type]
+        return '\n'.join(f'- {self.char_map[t]}: {str(t)}' for t in entity_types)
 
-        value = '\n'.join(''.join(row) for row in grid)
-        return value
-
-    def layout_status(self):
+    def create_status(self, world: World) -> str:
         statuses = []
 
-        timer_map: dict[int, Timer] = self.em.get(Timer)
+        timer_map: dict[int, Timer] = world.em.get(Timer)
         if timer_map:
             (_, timer), = timer_map.items()
             remain = f'Moves: {timer.remain}'
             statuses.append(remain)
 
-        key_collector_map: dict[int, KeyCollector] = self.em.get(KeyCollector)
+        key_collector_map: dict[int, KeyCollector] = world.em.get(KeyCollector)
         if key_collector_map:
             (_, key_collector), = key_collector_map.items()
             statuses.append(f'Keys: {key_collector.count}')
 
         return '\n'.join(statuses)
 
-    def __call__(self) -> str:
-        status = self.layout_status()
-        grid = self.layout_grid()
-        if status:
-            value = f'{status}\n{grid}'
-        else:
-            value = grid
+    def create_grid(self, world: World) -> list[list[str]]:
+        width, height = world.grid.width, world.grid.height
+        id_map: dict[int, Identity] = world.em.get(Identity)
+        pos_map: dict[int, Position] = world.em.get(Position)
+        empty = self.char_map[Entity.EMPTY]
+        grid = [[empty for _ in range(width)] for _ in range(height)]
+        for e, id in id_map.items():
+            pos = pos_map.get(e)
+            if pos:
+                grid[pos.y][pos.x] = self.char_map[id.type]
 
-        self.observer.observe(value)
+        value = '\n'.join(''.join(row) for row in grid)
+        return value
+
+    def __call__(self, world: World) -> str:
+        elements = [
+            self.create_legend(world),
+            self.create_status(world),
+            self.create_grid(world),
+        ]
+        return '\n\n'.join(e for e in elements if e)
 
 
-class ASCIIRichRenderSystem(ASCIIRenderSystem):
-    char_map = ENTITY_RICH_ASCII_MAP
+# def text_description(
+#         world: World,
+#         templates: dict[Entity, str] | None = None,
+#         indent: str = ''
+# ):
+#     templates = templates or {}
+#     templates = {**DESCRIPTION_TEMPLATE_MAP, **templates}
+
+#     width, height = world.grid.width, world.grid.height
+#     id_map: dict[int, Identity] = world.em.get(Identity)
+#     pos_map: dict[int, Position] = world.em.get(Position)
+#     timer_map: dict[int, Timer] = world.em.get(Timer)
+#     key_collector_map: dict[int, KeyCollector] = world.em.get(KeyCollector)
+
+#     lines = []
+#     lines.append(f'The grid is {width} tiles wide and {height} tiles high.')
+
+#     if timer_map:
+#         (_, timer), = timer_map.items()
+#         lines.append(f'You have {timer.remain} moves remaining.')
+
+#     if key_collector_map:
+#         (_, key_collector), = key_collector_map.items()
+#         lines.append(f'You have {key_collector.count} keys.')
+
+#     for e, id in id_map.items():
+#         template = templates.get(id.type)
+#         if template:
+#             line = template.format(pos=pos_map.get(e))
+#             lines.append(line)
+
+#     value = '\n'.join(f'{indent}{line}' for line in lines)
+#     return value

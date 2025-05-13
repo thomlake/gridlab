@@ -1,10 +1,9 @@
-from typing import Callable, Type
+from typing import Type
 
-from gridlab.interface import Actor, Observer
-from gridlab.world import AbstractWorld
+from gridlab.world import World
 
 
-WORLD_REGISTRY: dict[str, Type[AbstractWorld]] = {}
+WORLD_REGISTRY: dict[str, Type[World]] = {}
 
 
 def world_names():
@@ -15,31 +14,23 @@ def register_world(name: str):
     if name in WORLD_REGISTRY:
         raise ValueError(f'duplicate world name: {name}')
 
-    def inner(world_class: Type[AbstractWorld]):
+    def inner(world_class: Type[World]):
         WORLD_REGISTRY[name] = world_class
         return world_class
 
     return inner
 
 
-def create_world(
-        name: str,
-        actor: Actor | None = None,
-        observer: Observer | None = None,
-        view_systems: list[Callable[[], None]] | None = None,
-) -> AbstractWorld:
+def create_world(name: str) -> World:
     world_class = WORLD_REGISTRY[name]
     world = world_class()
-    world.actor = actor
-    world.observer = observer
-    world.view_systems = view_systems
     return world
 
 
 @register_world('empty')
-class EmptyWorld(AbstractWorld):
-    def initialize(self):
-        super().initialize(shape=(3, 4))
+class EmptyWorld(World):
+    def layout(self):
+        self.initialize(shape=(3, 4))
         self.add_player(0, 0)
         self.add_goal(2, 3)
 
@@ -54,9 +45,9 @@ class EmptyWorld(AbstractWorld):
 
 
 @register_world('blockade')
-class BlockadeWorld(AbstractWorld):
-    def initialize(self):
-        layout = """
+class BlockadeWorld(World):
+    def layout(self):
+        text_grid = """
         ........
         ........
         ..##..#.
@@ -66,34 +57,34 @@ class BlockadeWorld(AbstractWorld):
         ........
         @.......
         """
-        super().initialize(layout=layout)
+        self.initialize(text_grid=text_grid)
         self.add_chase_enemy(3, 3)
         moves = 4*[(0, -1)] + 4*[(0, 1)]
         self.add_patrol_enemy(7, 5, moves=moves)
 
 
 @register_world('door')
-class DoorWorld(AbstractWorld):
-    def initialize(self):
-        layout = """
+class DoorWorld(World):
+    def layout(self):
+        text_grid = """
         @...k..
         .......
         ^^#!#^^
         ...o...
         """
-        super().initialize(layout=layout)
+        self.initialize(text_grid=text_grid)
 
 
 @register_world('spike')
-class SpikeWorld_01(AbstractWorld):
-    def initialize(self):
-        layout = """
+class SpikeWorld_01(World):
+    def layout(self):
+        text_grid = """
         ...^....
         ........
         ...^....
         @..^..o.
         """
-        super().initialize(layout=layout)
+        self.initialize(text_grid=text_grid)
 
     def solve(self):
         return [
@@ -107,14 +98,14 @@ class SpikeWorld_01(AbstractWorld):
 
 
 @register_world('timer')
-class TimerWorld_01(AbstractWorld):
-    def initialize(self):
-        layout = """
+class TimerWorld_01(World):
+    def layout(self):
+        text_grid = """
         ..+..
         @...o
         .....
         """
-        super().initialize(layout=layout)
+        self.initialize(text_grid=text_grid)
         self.add_timer(limit=3)
 
     def solve(self):
@@ -129,9 +120,9 @@ class TimerWorld_01(AbstractWorld):
 
 
 @register_world('mirror')
-class MirrorWorld_01(AbstractWorld):
-    def initialize(self):
-        super().initialize(shape=(5, 4))
+class MirrorWorld_01(World):
+    def layout(self):
+        self.initialize(shape=(5, 4))
         self.add_player(2, 0)
         self.add_mirror_enemy(2, 3)
         self.add_wall(3, 2)
@@ -152,9 +143,9 @@ class MirrorWorld_01(AbstractWorld):
 
 
 @register_world('patrol')
-class PatrolWorld_01(AbstractWorld):
-    def initialize(self):
-        super().initialize(shape=(3, 5))
+class PatrolWorld_01(World):
+    def layout(self):
+        self.initialize(shape=(3, 5))
         self.add_player(1, 0)
         # moves = [(-1, 0), (1, 0), (1, 0), (-1, 0)]
         moves = [(1, 0), (-1, 0)]
@@ -182,9 +173,9 @@ class PatrolWorld_01(AbstractWorld):
 # ChatGPT
 
 
-class MirrorBarrierWorld(AbstractWorld):
-    def initialize(self):
-        super().initialize(shape=(7, 7))  # 7×7 grid
+class MirrorBarrierWorld(World):
+    def layout(self):
+        self.initialize(shape=(7, 7))  # 7×7 grid
 
         # 1) Build a solid barrier across row y=3, leaving exactly one gap at (3,3)
         for x in range(7):
@@ -213,7 +204,7 @@ class MirrorBarrierWorld(AbstractWorld):
         ]
 
 
-class MirrorMazeWorld(AbstractWorld):
+class MirrorMazeWorld(World):
     def initialize(self):
         super().initialize(shape=(7, 7))
         # carve out a “+” corridor: row y=3 and column x=3 are open, everything else is wall
@@ -239,7 +230,7 @@ class MirrorMazeWorld(AbstractWorld):
         ]
 
 
-class SpikeMirrorBranchWorld(AbstractWorld):
+class SpikeMirrorBranchWorld(World):
     def initialize(self):
         super().initialize(shape=(9, 7))
 
@@ -272,7 +263,7 @@ class SpikeMirrorBranchWorld(AbstractWorld):
         pass
 
 
-class MirrorChaseSpikeTrapWorld(AbstractWorld):
+class MirrorChaseSpikeTrapWorld(World):
     def solve(self):
         pass
 
