@@ -1,3 +1,4 @@
+from gridlab.action import Action
 from gridlab.entity import Entity  # noqa: F401
 from gridlab.runner import run_stdio  # noqa: F401
 from gridlab.view import TextDescription, TextGrid  # noqa: F401

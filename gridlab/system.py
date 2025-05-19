@@ -5,9 +5,9 @@ from gridlab.component import (
     Door,
     Key,
     KeyCollector,
+    FixedAI,
     Goal,
     MirrorAI,
-    MovementRequest,
     PatrolAI,
     Position,
     PositionDelta,
@@ -23,11 +23,71 @@ from gridlab.state import State
 from gridlab import a_star
 
 
+# class MovementSystem:
+#     def __init__(self, em: EntityManager, state: State, grid: Grid):
+#         self.em = em
+#         self.state = state
+#         self.grid = grid
+
+#     def __call__(self):
+#         if self.state.is_finished:
+#             return
+
+#         position_delta_map: dict[int, PositionDelta] = self.em.get(PositionDelta)
+#         position_delta_map.clear()
+
+#         movement_request_map: dict[int, MovementRequest] = self.em.get(MovementRequest)
+#         for ent, move in movement_request_map.items():
+#             self.move(ent, dx=move.x, dy=move.y)
+
+#         movement_request_map.clear()
+
+
+def move(em: EntityManager, grid: Grid, ent: int, dx: int, dy: int) -> bool:
+    old_position_delta = em.get(PositionDelta).get(ent)
+    if old_position_delta:
+        em.remove_component(ent, old_position_delta)
+
+    position_map: dict[int, Position] = em.get(Position)
+    pusher_map: dict[int, Pusher] = em.get(Pusher)
+    pushable_map: dict[int, Pushable] = em.get(Pushable)
+    solid_map: dict[int, Solid] = em.get(Solid)
+
+    current = position_map[ent]
+    target = Position(current.x + dx, current.y + dy)
+
+    # 1) Out of bounds?
+    if not grid.inbounds(target.x, target.y):
+        return False
+
+    # 2) Find obstacles
+    for other, position in position_map.items():
+        if position != target:
+            continue
+
+        # If pushable, try to push it
+        if other in pushable_map:
+            if ent not in pusher_map:
+                return False  # ent isn't a pusher
+            elif not move(em, grid, other, dx, dy):
+                return False  # pushable couldn't be pushed
+
+        # Otherwise, block movement
+        solid = solid_map.get(other)
+        if solid and ent not in solid.allow:
+            return False
+
+    # 3) Nothing blocking (all pushable blockers moved), so we move
+    position_map[ent] = target
+    em.add_component(ent, PositionDelta(dx, dy))
+    return True
+
+
 class ActionSystem:
-    def __init__(self, em: EntityManager, state: State, player: int):
+    def __init__(self, em: EntityManager, state: State, grid: Grid):
         self.em = em
         self.state = state
-        self.player = player
+        self.grid = grid
         self.action_queue: list[tuple[str, Action]] = []
 
     def add_actions(self, actions: list[tuple[str, Action]]):
@@ -38,20 +98,8 @@ class ActionSystem:
             return
 
         for ent, action in self.action_queue:
-            components = []
-            if action == Action.UP:
-                components.append(MovementRequest(0, -1))
-            elif action == Action.DOWN:
-                components.append(MovementRequest(0, 1))
-            elif action == Action.LEFT:
-                components.append(MovementRequest(-1, 0))
-            elif action == Action.RIGHT:
-                components.append(MovementRequest(1, 0))
-            else:
-                raise ValueError(f'unknown action {action}')
-
-            for component in components:
-                self.em.add_component(ent, component)
+            dx, dy = action.move_delta
+            move(self.em, self.grid, ent, dx, dy)
 
         self.action_queue.clear()
 
@@ -66,7 +114,7 @@ class ChaseAISystem:
         if self.state.is_finished:
             return
 
-        chase_ai_map: dict[int, ChaseAI] = self.em.get(ChaseAI)
+        ai_map: dict[int, ChaseAI] = self.em.get(ChaseAI)
         position_map: dict[int, Position] = self.em.get(Position)
         solid_map: dict[int, Solid] = self.em.get(Solid)
 
@@ -75,9 +123,9 @@ class ChaseAISystem:
             pos = position_map[ent]
             grid[pos.y][pos.x] = False
 
-        for ent, chase_ai in chase_ai_map.items():
+        for ent, ai in ai_map.items():
             entity_pos = position_map.get(ent)
-            target_pos = position_map.get(chase_ai.target)
+            target_pos = position_map.get(ai.target)
             if not (entity_pos and target_pos):
                 continue
 
@@ -86,42 +134,63 @@ class ChaseAISystem:
                 start=(entity_pos.x, entity_pos.y),
                 goal=(target_pos.x, target_pos.y),
             )
-            self.em.add_component(ent, MovementRequest(dx, dy))
+            move(self.em, self.grid, ent, dx, dy)
 
 
 class MirrorAISystem:
-    def __init__(self, em: EntityManager, state: State):
+    def __init__(self, em: EntityManager, state: State, grid: Grid):
         self.em = em
         self.state = state
+        self.grid = grid
 
     def __call__(self):
         if self.state.is_finished:
             return
 
-        mirror_ai_map: dict[int, MirrorAI] = self.em.get(MirrorAI)
+        ai_map: dict[int, MirrorAI] = self.em.get(MirrorAI)
         position_delta_map: dict[int, PositionDelta] = self.em.get(PositionDelta)
 
-        for ent, mirror_ai in mirror_ai_map.items():
-            delta = position_delta_map.get(mirror_ai.target)
+        for ent, ai in ai_map.items():
+            delta = position_delta_map.get(ai.target)
             if not delta:
                 continue
 
-            self.em.add_component(ent, MovementRequest(delta.x, -delta.y))
+            move(self.em, self.grid, ent, delta.x, -delta.y)
 
 
 class PatrolAISystem:
-    def __init__(self, em: EntityManager, state: State):
+    def __init__(self, em: EntityManager, state: State, grid: Grid):
         self.em = em
         self.state = state
+        self.grid = grid
 
     def __call__(self):
         if self.state.is_finished:
             return
 
-        patrol_ai_map: dict[int, PatrolAI] = self.em.get(PatrolAI)
-        for ent, ai in patrol_ai_map.items():
+        ai_map: dict[int, PatrolAI] = self.em.get(PatrolAI)
+        for ent, ai in ai_map.items():
+            dx, dy = ai.delta
+            if not move(self.em, self.grid, ent, dx, dy):
+                dx, dy = -dx, -dy
+                move(self.em, self.grid, ent, dx, dy)
+                ai.delta = dx, dy
+
+
+class FixedAISystem:
+    def __init__(self, em: EntityManager, state: State, grid: Grid):
+        self.em = em
+        self.state = state
+        self.grid = grid
+
+    def __call__(self):
+        if self.state.is_finished:
+            return
+
+        ai_map: dict[int, FixedAI] = self.em.get(FixedAI)
+        for ent, ai in ai_map.items():
             dx, dy = ai.moves[ai.move_index]
-            self.em.add_component(ent, MovementRequest(dx, dy))
+            move(self.em, self.grid, ent, dx, dy)
             ai.move_index = (ai.move_index + 1) % len(ai.moves)
 
 
@@ -248,60 +317,3 @@ class GoalSystem:
         goal_positions = [position_map[e] for e in goal_map]
         if any((p1.x, p1.y) == (p2.x, p2.y) for p2 in goal_positions):
             self.state.goal_reached = True
-
-
-class MovementSystem:
-    def __init__(self, em: EntityManager, state: State, grid: Grid):
-        self.em = em
-        self.state = state
-        self.grid = grid
-
-    def __call__(self):
-        if self.state.is_finished:
-            return
-
-        position_delta_map: dict[int, PositionDelta] = self.em.get(PositionDelta)
-        position_delta_map.clear()
-
-        movement_request_map: dict[int, MovementRequest] = self.em.get(MovementRequest)
-        for ent, move in movement_request_map.items():
-            self.move(ent, dx=move.x, dy=move.y)
-
-        movement_request_map.clear()
-
-    def move(self, ent, dx, dy) -> bool:
-        position_map: dict[int, Position] = self.em.get(Position)
-        pusher_map: dict[int, Pusher] = self.em.get(Pusher)
-        pushable_map: dict[int, Pushable] = self.em.get(Pushable)
-        solid_map: dict[int, Solid] = self.em.get(Solid)
-
-        current = position_map[ent]
-        target = Position(current.x + dx, current.y + dy)
-
-        # 1) Out of bounds?
-        if not self.grid.inbounds(target.x, target.y):
-            return False
-
-        # 2) What’s in the way?
-        blockers = [
-            e for e, p in position_map.items()
-            if (p.x, p.y) == (target.x, target.y)
-        ]
-
-        for other in blockers:
-            # If pushable, try to push it
-            if other in pushable_map:
-                if ent not in pusher_map:
-                    return False  # couldn't push
-                elif not self.move(other, dx, dy):
-                    return False  # couldn't push
-
-            # Otherwise, block movement
-            solid = solid_map.get(other)
-            if solid and ent not in solid.allow:
-                return False
-
-        # 3) Nothing blocking (all pushable blockers moved), so we move
-        position_map[ent] = target
-        self.em.add_component(ent, PositionDelta(dx, dy))
-        return True

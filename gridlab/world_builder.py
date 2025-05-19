@@ -1,5 +1,6 @@
 from typing import Type
 
+from gridlab.action import Action
 from gridlab.world import World
 
 
@@ -145,14 +146,17 @@ class MirrorWorld_01(World):
 @register_world('patrol')
 class PatrolWorld_01(World):
     def layout(self):
-        self.initialize(shape=(3, 5))
-        self.add_player(1, 0)
-        # moves = [(-1, 0), (1, 0), (1, 0), (-1, 0)]
-        moves = [(1, 0), (-1, 0)]
-        self.add_patrol_enemy(1, 2, moves=moves)
-        self.add_goal(1, 3)
-        self.add_wall(1, 1)
-        self.add_block(0, 2)
+        text_grid = """
+        #####
+        #.@.#
+        #.#.#
+        #...#
+        #.o.#
+        #####
+        """
+        self.initialize(text_grid=text_grid)
+        self.add_patrol_enemy(3, 3, delta=(1, 0))
+        self.add_block(1, 3)
 
     def solve(self):
         return [
@@ -163,9 +167,9 @@ class PatrolWorld_01(World):
             (0, -1),
             (1, 0),
             (1, 0),
-            (0, -1),
-            (0, -1),
-            (0, -1),
+            (0, 1),
+            (0, 1),
+            (0, 1),
             (-1, 0),
         ]
 

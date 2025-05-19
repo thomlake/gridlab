@@ -25,12 +25,6 @@ class Position:
 
 
 @dataclass
-class MovementRequest:
-    x: int
-    y: int
-
-
-@dataclass
 class PositionDelta:
     """Most recent change in a entity's position (cleared before the MovementSystem executes)."""
     x: int
@@ -99,6 +93,12 @@ class MirrorAI:
 
 @dataclass
 class PatrolAI:
+    """Entity that moves along a fixed path."""
+    delta: tuple[int, int]
+
+
+@dataclass
+class FixedAI:
     """Entity that moves along a fixed path."""
     moves: list[tuple[int, int]]
     move_index: int = 0

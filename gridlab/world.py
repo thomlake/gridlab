@@ -14,6 +14,7 @@ class World:
     action_system: system.ActionSystem
     systems: list[Callable[[], None]]
     player: int | None = None
+    turn: int = 1
 
     def __init__(self):
         self.reset()
@@ -29,6 +30,7 @@ class World:
         self.action_system = None
         self.systems = []
         self.player = None
+        self.turn = 1
         self.layout()
         self.setup_systems()
 
@@ -89,6 +91,8 @@ class World:
         for s in self.systems:
             s()
 
+        self.turn += 1
+
     def setup_systems(self):
         def on_player_death():
             pos = self.em.get(component.Position)[self.player]
@@ -106,11 +110,10 @@ class World:
 
         self.state.goal_reached_callbacks.append(on_goal_reached)
 
-        action_system = system.ActionSystem(self.em, self.state, player=self.player)
-        movement_system = system.MovementSystem(self.em, self.state, grid=self.grid)
+        action_system = system.ActionSystem(self.em, self.state, grid=self.grid)
 
-        patrol_ai_system = system.PatrolAISystem(self.em, self.state)
-        mirror_ai_system = system.MirrorAISystem(self.em, self.state)
+        patrol_ai_system = system.PatrolAISystem(self.em, self.state, grid=self.grid)
+        mirror_ai_system = system.MirrorAISystem(self.em, self.state, grid=self.grid)
         chase_ai_system = system.ChaseAISystem(self.em, self.state, grid=self.grid)
 
         death_system = system.DeathSystem(self.em, self.state, player=self.player)
@@ -121,13 +124,11 @@ class World:
         self.action_system = action_system
         self.systems = [
             action_system,
-            movement_system,
             death_system,
+            door_system,
             patrol_ai_system,
             mirror_ai_system,
             chase_ai_system,
-            movement_system,
-            door_system,
             death_system,
             goal_system,
             timer_system,
@@ -227,7 +228,7 @@ class World:
         self.em.add_component(enemy, component.ChaseAI(target=self.player))
         return enemy
 
-    def add_patrol_enemy(self, x: int, y: int, moves: list[tuple[int, int]]) -> int:
+    def add_patrol_enemy(self, x: int, y: int, delta: tuple[int, int]) -> int:
         """Add an enemy at the given position with a fixed movement pattern and return its id.
 
         Patrol enemies cycle through a list or pre-specified list of movements.
@@ -237,7 +238,20 @@ class World:
         self.em.add_component(enemy, component.Position(x, y))
         self.em.add_component(enemy, component.Solid(allow={self.player}))
         self.em.add_component(enemy, component.Deadly())
-        self.em.add_component(enemy, component.PatrolAI(moves=moves))
+        self.em.add_component(enemy, component.PatrolAI(delta=delta))
+        return enemy
+
+    def add_fixed_enemy(self, x: int, y: int, moves: list[tuple[int, int]]) -> int:
+        """Add an enemy at the given position with a fixed movement pattern and return its id.
+
+        Fixed enemies cycle through a list or pre-specified list of movements.
+        """
+        enemy = self.em.create()
+        self.em.add_component(enemy, component.Identity(Entity.ENEMY))
+        self.em.add_component(enemy, component.Position(x, y))
+        self.em.add_component(enemy, component.Solid(allow={self.player}))
+        self.em.add_component(enemy, component.Deadly())
+        self.em.add_component(enemy, component.FixedAI(moves=moves))
         return enemy
 
     def add_mirror_enemy(self, x: int, y: int) -> int:
