@@ -102,6 +102,7 @@ print(template.format(**views))
 Output:
 
 ## Legend
+
 - `@`: player
 - `#`: wall
 - `0`: block
@@ -109,9 +110,11 @@ Output:
 - `e`: enemy
 
 ## Status
+
 - Turn: 1
 
 ## Grid
+
 #####
 #.X.#
 #0.e#
