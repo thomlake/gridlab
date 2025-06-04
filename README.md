@@ -9,10 +9,10 @@ Gridlab supports text rendering in a variety of simple text formats.
 ```
 ascii           fancy
 #####           █████
-#.@.#           █.@.█
-#.#.#           █.█.█
-#0.e#           █■.e█
 #.X.#           █.X.█
+#0.e#           █■.e█
+#.#.#           █.█.█
+#.@.#           █.@.█
 #####           █████
 ```
 
@@ -26,13 +26,36 @@ import gridlab
 gridlab.run_stdio('demo')
 ```
 
+**Output:**
+```
+e: enemy
+@: player
+▴: spike
+X: goal
+█: wall
+■: block
+
+[Turn: 1]
+████████████
+████.███████
+██..■..▴.X██
+██...■███e██
+██.@.......█
+████████████
+
+Enter action (u)p/(d)own/(l)eft/(r)ight/(q)uit':
+```
+
 ### Manual Orchestration
 
 ```python
 import gridlab
 
 world = gridlab.create_world('patrol')
-pipeline = gridlab.view.build_text_pipeline(theme='fancy')
+pipeline = gridlab.build_view_pipeline()
+# pipeline = gridlab.build_view_pipeline(mode='text', theme='ascii')  # default values, same as above
+# pipeline = gridlab.build_view_pipeline(mode='text', theme='fancy')  # use non-strict ASCII chars
+# pipeline = gridlab.build_view_pipeline(mode='terminal')  # styling for terminal using ANSI codes
 views = pipeline.render_views(world)
 
 print(views.keys())
@@ -40,6 +63,7 @@ print(views.keys())
 
 ```
 Output:
+
 dict_keys(['legend', 'status', 'grid'])
 ```
 
@@ -49,12 +73,13 @@ print(views['grid'])
 
 ```
 Output:
-█████
-█.X.█
-█■.e█
-█.█.█
-█.@.█
-█████
+
+#####
+#.X.#
+#0.e#
+#.#.#
+#.@.#
+#####
 ```
 
 ```python
@@ -75,24 +100,22 @@ print(template.format(**views))
 
 ```
 Output:
+
 ## Legend
-- `e`: enemy
 - `@`: player
-- `█`: wall
+- `#`: wall
+- `0`: block
 - `X`: goal
-- `■`: block
+- `e`: enemy
 
 ## Status
 - Turn: 1
 
 ## Grid
-█████
-█.X.█
-█■.e█
-█.█.█
-█.@.█
-█████
+#####
+#.X.#
+#0.e#
+#.#.#
+#.@.#
+#####
 ```
-
-```python
-worl

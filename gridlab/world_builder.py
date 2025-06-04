@@ -45,6 +45,49 @@ class EmptyWorld(World):
         ]
 
 
+@register_world('demo')
+class DemoWorld(World):
+    def layout(self):
+        text_grid = """
+        ############
+        ####.#######
+        ##..0..^.X##
+        ##...0###e##
+        ##.@.......#
+        ############
+        """
+        char_map = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+            '0': self.add_block,
+            '^': self.add_spike,
+            'e': self.add_chase_enemy,
+        }
+        self.initialize(text_grid=text_grid, char_map=char_map)
+
+    def solve(self):
+        return [
+            Action.UP,
+            Action.RIGHT,
+            Action.UP,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.LEFT,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.UP,
+            Action.UP,
+        ]
+
+
 @register_world('demo1')
 class DemoWorld_01(World):
     def layout(self):
@@ -55,7 +98,7 @@ class DemoWorld_01(World):
         #.@...1^^^1.^^######
         #...^^...^.0..######
         #........^0^..##...#
-        ###...1...0.#...X.#
+        ###...1...0.#....X.#
         ################...#
         ####################
         """
@@ -67,6 +110,44 @@ class DemoWorld_01(World):
             '0': self.add_block,
             '^': self.add_spike,
             '1': lambda x, y: self.add_patrol_enemy(x, y, delta=(0, -1)),
+        }
+        self.initialize(text_grid=text_grid, char_map=char_map)
+
+
+@register_world('demo2')
+class DemoWorld_02(World):
+    def layout(self):
+        text_grid = """
+        ####################
+        #......~112~.......#
+        #......~1~~~.......#
+        #......#~~~~.......#
+        #......#~#.........#
+        #......#~#.........#
+        #......#...........#
+        #......###.........#
+        ####################
+        """
+
+        def add_custom_1(x, y):
+            self.add_fog(x, y)
+            self.add_block(x, y)
+
+        def add_custom_2(x, y):
+            self.add_fog(x, y)
+            self.add_chase_enemy(x, y)
+
+        char_map = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+            '0': self.add_block,
+            '^': self.add_spike,
+            '~': self.add_fog,
+            '1': add_custom_1,
+            '2': add_custom_2,
+            '?': lambda x, y: self.add_patrol_enemy(x, y, delta=(0, -1)),
         }
         self.initialize(text_grid=text_grid, char_map=char_map)
 
@@ -145,7 +226,6 @@ class BlockadeWorld(World):
         text_grid = """
         ##########
         #........#
-        #........#
         #..##..#.#
         #...1.##X#
         #.##.....#
@@ -210,12 +290,13 @@ class SpikeWorld_01(World):
 
     def solve(self):
         return [
-            (1, 0),
-            (0, 1),
-            (0, 1),
-            (0, 1),
-            (0, 1),
-            (-1, 0),
+            Action.UP,
+            Action.UP,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.DOWN,
         ]
 
 
@@ -241,12 +322,12 @@ class TimerWorld_01(World):
 
     def solve(self):
         return [
-            (1, 0),
-            (1, 0),
-            (0, 1),
-            (0, -1),
-            (1, 0),
-            (1, 0),
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.UP,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
         ]
 
 
