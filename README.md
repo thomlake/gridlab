@@ -1,78 +1,98 @@
-# gridlab
+# Gridlab
 
-*Causal inference in grid environments*
+*Causal inference in text-based grid games*
 
-<table>
-<tr><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #4F9397; font-weight: bold">@</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #C79756; font-weight: bold">k</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td></tr>
-<tr><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td></tr>
-<tr><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #D4674A; font-weight: bold">^</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #D4674A; font-weight: bold">^</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #3B3A36; color: #3B3A36; font-weight: bold">█</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #3B3A36; font-weight: bold">#</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #3B3A36; color: #3B3A36; font-weight: bold">█</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #D4674A; font-weight: bold">^</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #D4674A; font-weight: bold">^</td></tr>
-<tr><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #C79756; font-weight: bold">$</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td><td align="center" style="font-size: 32px; font-family: 'Source Code Pro', monospace; line-height: 1.5em; padding: 2px 16px; border: none; border-radius: 0px; background: #F4EFE3; color: #DAC6A3">.</td></tr>
-</table>
+## Themes
 
+Gridlab supports text rendering in a variety of simple text formats.
 
 ```
-fancy           plain
-█████           |||||
-█.X.█           |.X.|
-█...█           |...|
-█■e.█           |=e.|
-█.█.█           |.|.|
-█.@.█           |.@.|
-█████           |||||
+ascii           fancy
+#####           █████
+#.@.#           █.@.█
+#.#.#           █.█.█
+#0.e#           █■.e█
+#.X.#           █.X.█
+#####           █████
 ```
-
-
 
 ## Usage
 
-```python
-from gridlab import World
-
-
-w = World()
-w.initialize(builder=factory)
-
-# gridlab.run_demo(w)
-
-while True:
-    grid: str = w.to_symbolic_grid()
-    desc: str = w.to_text_description()
-    action = get_action(state)
-    w.step(action)
-    if w.is_finished:
-        break
-
-```
+### Interactive Terminal
 
 ```python
 import gridlab
 
+gridlab.run_stdio('demo')
+```
 
-w = gridlab.create_world('demo')
-# gridlab.run_stdio(w)
+### Manual Orchestration
 
-while True:
-    desc: str = gridlab.text_desc(w)
-    grid: str = gridlab.text_grid(w)
-    action = get_action(state)
-    w.step(action)
-    if w.is_finished:
-        break
+```python
+import gridlab
 
+world = gridlab.create_world('patrol')
+pipeline = gridlab.view.build_text_pipeline(theme='fancy')
+views = pipeline.render_views(world)
+
+print(views.keys())
+```
+
+```
+Output:
+dict_keys(['legend', 'status', 'grid'])
 ```
 
 ```python
-
-
-while True:
-    text = gridlab.render_text(w)
-    action = get_action(text)
-    w.step(action)
-    if w.state.is_finished:
-        break
-
+print(views['grid'])
 ```
 
+```
+Output:
+█████
+█.X.█
+█■.e█
+█.█.█
+█.@.█
+█████
+```
 
+```python
+template = """\
+## Legend
 
+{legend}
 
+## Status
+
+{status}
+
+## Grid
+
+{grid}"""
+print(template.format(**views))
+```
+
+```
+Output:
+## Legend
+- `e`: enemy
+- `@`: player
+- `█`: wall
+- `X`: goal
+- `■`: block
+
+## Status
+- Turn: 1
+
+## Grid
+█████
+█.X.█
+█■.e█
+█.█.█
+█.@.█
+█████
+```
+
+```python
+worl

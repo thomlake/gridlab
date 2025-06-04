@@ -1,5 +1,8 @@
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Callable
+
+from gridlab.event import Event
 
 
 @dataclass
@@ -44,3 +47,25 @@ class State:
     @property
     def is_finished(self):
         return self.player_dead or self.goal_reached or self.terminated
+
+
+# class EventManager:
+#     events: dict[tuple[str, int], list[Callable[[tuple[str, int]], None]]] = None
+#     invoked: dict[tuple[str, int], bool]
+
+#     def add_callback(
+#             self,
+#             name: str,
+#             entity: int,
+#             callback: Callable[[int], None],
+#     ):
+#         self.events = self.events or {}
+#         self.events[name, entity].append(callback)
+
+#     def invoke(self, name: str, entity: int):
+#         event_id = name, entity
+#         callbacks = self.events.get(event_id, [])
+#         for callback in callbacks:
+#             callback(entity)
+
+#         self.invoked[event_id] = True

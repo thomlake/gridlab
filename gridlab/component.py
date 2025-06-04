@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from gridlab.entity import Entity
+from gridlab.utils import grid_neighbors
 
 
 @dataclass
@@ -10,18 +11,21 @@ class Identity:
 
 
 @dataclass
+class Active:
+    """Is the entity active."""
+    pass
+
+
+@dataclass
 class Position:
     """Position of an entity in the grid."""
     x: int
     y: int
 
-    def neighbors(self):
-        x, y = self.x, self.y
-        return [(x + 1, y), (x - 1, y), (x, y - 1), (x, y + 1)]
-
-    def is_adjacent(self, other: 'Position'):
-        pos = other.x, other.y
-        return pos in self.neighbors()
+    def is_adjacent(self, other: 'Position', diagonal: bool = False):
+        p1 = self.x, self.y
+        p2 = other.x, other.y
+        return p2 in grid_neighbors(p1, diagonal=diagonal)
 
 
 @dataclass
@@ -35,6 +39,31 @@ class PositionDelta:
 class Goal:
     """Entity that when reached triggers successful completion."""
     pass
+
+
+@dataclass
+class Fog:
+    """Entity that masks other entities from view."""
+    pass
+
+
+@dataclass
+class Switch:
+    """A floor switch you can step on."""
+    group: list[int] | None = None
+    pressed: bool = False
+    pressable: bool = True
+    trigger_types: list[Entity] = field(default_factory=lambda: [Entity.PLAYER])
+    trigger_entities: list[int] = field(default_factory=lambda: [])
+
+    def is_triggered(self, ent: int, type: Entity):
+        return ent in self.trigger_entities or type in self.trigger_types
+
+
+@dataclass
+class Switchable:
+    """Add or delete the component.Active on switch trigger."""
+    triggers: list[int]  # Link to switches
 
 
 @dataclass
@@ -58,7 +87,13 @@ class KeyCollector:
 @dataclass
 class Solid:
     """Entity cannot be overlapped or moved through."""
-    allow: set[int] = field(default_factory=set)
+    allow: tuple[int, ...] | None = None
+
+    def is_blocked(self, other: int):
+        if self.allow is None:
+            return True
+
+        return other not in self.allow
 
 
 @dataclass
@@ -83,12 +118,27 @@ class Deadly:
 class ChaseAI:
     """Entity that moves toward the target."""
     target: int
+    steps: int = 1
+    stagger: int = 1
+    tick: int = 0
+    diagonal: bool = False
 
 
 @dataclass
 class MirrorAI:
     """Entity that copies a target entity's movement on x-axis and mirrors on the y-axis."""
     target: int
+    mirror_x: bool = False
+    mirror_y: bool = True
+
+    def reflect(self, x: int, y: int):
+        if self.mirror_x:
+            x = -x
+
+        if self.mirror_y:
+            y = -y
+
+        return x, y
 
 
 @dataclass
@@ -102,6 +152,17 @@ class FixedAI:
     """Entity that moves along a fixed path."""
     moves: list[tuple[int, int]]
     move_index: int = 0
+
+
+@dataclass
+class SnakeAI:
+    """Entity that occupies multiple spaces."""
+    target: int
+    head: int
+    next: int | None
+    steps: int = 1
+    diagonal: bool = False
+    delta: tuple[int, int] | None = None
 
 
 @dataclass
