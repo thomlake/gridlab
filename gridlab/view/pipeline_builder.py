@@ -16,21 +16,12 @@ def build_view_pipeline(
         theme: Theme | str | None = None,
         mode: Mode = Mode.TEXT,
         full_legend: bool = False,
-        template: str | None = None,
-        templates: dict[int | None, str] | None = None,
 ):
     if theme is None:
         theme = {
             Mode.TEXT: 'ascii',
             Mode.TERMINAL: 'desert',
         }[mode]
-
-    templates = templates or {}
-    if template:
-        if None in templates:
-            raise ValueError('multiple default templates specified')
-
-        templates[None] = template
 
     views: dict[str, View]
     if mode == Mode.TEXT:
@@ -48,4 +39,4 @@ def build_view_pipeline(
     else:
         raise ValueError(f'unknown mode {mode}')
 
-    return ViewPipeline(views=views, theme=theme, templates=templates)
+    return ViewPipeline(views=views, theme=theme)

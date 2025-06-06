@@ -4,8 +4,9 @@
 
 ## Themes
 
-Gridlab supports text rendering in a variety of simple text formats.
+Gridlab supports rendering in simple text formats, terminal styling with ANSI codes, and HTML+CSS.
 
+The two builtin plain text themes are depicted below.
 ```
 ascii           fancy
 #####           █████
@@ -26,8 +27,9 @@ import gridlab
 gridlab.run_stdio('demo')
 ```
 
-**Output:**
 ```
+Output:
+
 e: enemy
 @: player
 ▴: spike
@@ -51,74 +53,58 @@ Enter action (u)p/(d)own/(l)eft/(r)ight/(q)uit':
 ```python
 import gridlab
 
-world = gridlab.create_world('patrol')
+world = gridlab.create_world('demo')
 pipeline = gridlab.build_view_pipeline()
 # pipeline = gridlab.build_view_pipeline(mode='text', theme='ascii')  # default values, same as above
 # pipeline = gridlab.build_view_pipeline(mode='text', theme='fancy')  # use non-strict ASCII chars
-# pipeline = gridlab.build_view_pipeline(mode='terminal')  # styling for terminal using ANSI codes
-views = pipeline.render_views(world)
-
-print(views.keys())
+# pipeline = gridlab.build_view_pipeline(mode='terminal')  #  terminal styling with ANSI codes
+views = pipeline.render(world)
+text = '\n\n'.join(f'## {k}\n\n{v}' for k, v in views.items())
+print(text)
 ```
 
 ```
 Output:
 
-dict_keys(['legend', 'status', 'grid'])
+## legend
+
+- `@`: player
+- `0`: block
+- `#`: wall
+- `^`: spike
+- `X`: goal
+- `e`: enemy
+
+## status
+
+- Turn: 1
+
+## grid
+
+############
+####.#######
+##..0..^.X##
+##...0###e##
+##.@.......#
+############
 ```
 
+Actions are simple string values `up`, `down`, `left`, and `right`.
+Single characters, `udlr`, also work.
+
 ```python
+world.step(action='up')
+views = pipeline.render(world)
 print(views['grid'])
 ```
 
 ```
 Output:
 
-#####
-#.X.#
-#0.e#
-#.#.#
-#.@.#
-#####
-```
-
-```python
-template = """\
-## Legend
-
-{legend}
-
-## Status
-
-{status}
-
-## Grid
-
-{grid}"""
-print(template.format(**views))
-```
-
-```
-Output:
-
-## Legend
-
-- `@`: player
-- `#`: wall
-- `0`: block
-- `X`: goal
-- `e`: enemy
-
-## Status
-
-- Turn: 1
-
-## Grid
-
-#####
-#.X.#
-#0.e#
-#.#.#
-#.@.#
-#####
+############
+####.#######
+##..0..^.X##
+##.@.0###.##
+##.......e.#
+############
 ```

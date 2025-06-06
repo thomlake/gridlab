@@ -172,6 +172,7 @@ class World:
         self.em.add_component(e, component.Position(x, y))
         self.em.add_component(e, component.Pusher())
         self.em.add_component(e, component.KeyCollector())
+        self.em.add_component(e, component.SwitchPresser())
         return e
 
     def add_goal(self, x: int, y: int) -> int:

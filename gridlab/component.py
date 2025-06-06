@@ -53,17 +53,18 @@ class Switch:
     group: list[int] | None = None
     pressed: bool = False
     pressable: bool = True
-    trigger_types: list[Entity] = field(default_factory=lambda: [Entity.PLAYER])
-    trigger_entities: list[int] = field(default_factory=lambda: [])
-
-    def is_triggered(self, ent: int, type: Entity):
-        return ent in self.trigger_entities or type in self.trigger_types
 
 
 @dataclass
 class Switchable:
     """Add or delete the component.Active on switch trigger."""
     triggers: list[int]  # Link to switches
+
+
+@dataclass
+class SwitchPresser:
+    """Entity that can press switches."""
+    pass
 
 
 @dataclass

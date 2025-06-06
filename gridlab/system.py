@@ -19,6 +19,7 @@ from gridlab.component import (
     SnakeAI,
     Solid,
     Switch,
+    SwitchPresser,
     Switchable,
     Timer,
     TimerReset,
@@ -415,62 +416,6 @@ class TimerSystem:
         self.em.remove_all(expired_entities)
 
 
-# class SwitchSystem:
-#     def __init__(
-#             self,
-#             em: EntityManager,
-#             state: State,
-#     ):
-#         self.em = em
-#         self.state = state
-
-#     def __call__(self):
-#         if self.state.is_finished:
-#             return
-
-#         active_map = self.em.get(Active)
-#         id_map = self.em.get(Identity)
-#         position_map = self.em.get(Position)
-#         switch_map = self.em.get(Switch)
-#         switchable_map = self.em.get(Switchable)
-
-#         pressed_switches: set[int] = set()
-#         for switch_ent, switch in switch_map.items():
-#             if switch_ent not in active_map:
-#                 continue
-
-#             if switch.pressed:
-#                 continue
-
-#             switch_pos = position_map[switch_ent]
-#             overlap = [e for e, p in position_map.items() if e != switch_ent and p == switch_pos]
-#             if not overlap:
-#                 continue
-
-#             if not any(switch.is_triggered(e, id_map[e].type) for e in overlap):
-#                 continue
-
-#             switch.pressed = True
-#             id_map[switch_ent].type = Entity.SWITCH_PRESSED
-#             pressed_switches.add(switch_ent)
-
-#         for switch_ent in pressed_switches:
-#             switch = switch_map[switch_ent]
-#             other_switch = switch_map.get(switch.toggle)
-#             if other_switch:
-#                 other_switch.pressed = False
-#                 id_map[switch.toggle].type = Entity.SWITCH_PRESSABLE
-
-#         for switchable_ent, switchable in switchable_map.items():
-#             if not any(e in pressed_switches for e in switchable.triggers):
-#                 continue
-
-#             if switchable_ent in active_map:
-#                 active_map.pop(switchable_ent)
-#             else:
-#                 active_map[switchable_ent] = Active()
-
-
 class SwitchSystem:
     def __init__(self, em: EntityManager, state: State):
         self.em = em
@@ -485,16 +430,17 @@ class SwitchSystem:
         position_map = self.em.get(Position)
         switch_map = self.em.get(Switch)
         switchable_map = self.em.get(Switchable)
+        switch_presser_map = self.em.get(SwitchPresser)
 
         # Collect switches that are overlapped by trigger entities this tick
         triggered_switches: dict[int, bool] = {}
         for switch_ent, switch in switch_map.items():
             switch_pos = position_map[switch_ent]
-            overlap = [
-                e for e, p in position_map.items()
-                if e != switch_ent and p == switch_pos
-            ]
-            if any(switch.is_triggered(e, id_map[e].type) for e in overlap):
+            overlap = any(
+                True for e, p in position_map.items()
+                if e in switch_presser_map and p == switch_pos
+            )
+            if overlap:
                 triggered_switches[switch_ent] = switch.pressable
 
         # Handle solo and group switches

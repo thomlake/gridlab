@@ -8,18 +8,14 @@ class ViewPipeline:
             self,
             views: dict[str, View],
             theme: Theme | str = 'ascii',
-            templates: dict[int | None, str] | None = None,
-            separator: str = '\n\n',
     ):
         if not isinstance(theme, Theme):
             theme = load_theme(theme)
 
         self.views = views
         self.theme = theme
-        self.templates = templates or {}
-        self.separator = separator
 
-    def render_views(self, world: World, player: int | None = None):
+    def render(self, world: World, player: int | None = None):
         if player is None:
             player = world.player
 
@@ -28,12 +24,3 @@ class ViewPipeline:
             sections[name] = view(world, player, theme=self.theme)
 
         return sections
-
-    def render(self, world: World, player: int | None = None):
-        views = self.render_views(world, player)
-
-        template = self.templates.get(world.turn, self.templates.get(None))
-        if template:
-            return template.format(**views)
-
-        return self.separator.join(views.values())
