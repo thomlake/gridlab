@@ -4,9 +4,8 @@
 
 ## Themes
 
-Gridlab supports rendering in simple text formats, terminal styling with ANSI codes, and HTML+CSS.
+Gridlab supports rendering in plain text, terminal styling with ANSI codes, and HTML+CSS.
 
-The two builtin plain text themes are depicted below.
 ```
 ascii           fancy
 #####           █████
