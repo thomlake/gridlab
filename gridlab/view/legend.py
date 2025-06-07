@@ -35,12 +35,12 @@ class TerminalLegendView(TextLegendView):
 class HTMLLegendView(TextLegendView):
     def __call__(self, world: World, player: int, theme: Theme):
         items = self.legend_items(world, theme)
-        elements = '\n'.join(f'<li><span class="{e}">{s.char}</span>: {e}</li>' for e, s in items)
+        elements = '\n'.join(f'<li><span class="entity {e}">{s.char}</span>: {e}</li>' for e, s in items)
         return f'<ul class="legend">\n{elements}\n</ul>'
 
 
 class HTMLTableLegendView(TextLegendView):
     def __call__(self, world: World, player: int, theme: Theme):
         items = self.legend_items(world, theme)
-        rows = '\n'.join(f'<tr><td class="{e}">{s.char}</td><td>{e}</td></tr>' for e, s in items)
+        rows = '\n'.join(f'<tr><td class="entity {e}">{s.char}</td><td>{e}</td></tr>' for e, s in items)
         return f'<table class="legend">\n{rows}\n</table>'

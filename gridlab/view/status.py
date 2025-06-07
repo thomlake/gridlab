@@ -42,12 +42,12 @@ class TerminalStatusView(TextStatusView):
 class HTMLStatusView(TextStatusView):
     def __call__(self, world: World, player: int, theme: Theme):
         status_dict = self.status_dict(world, player)
-        content = '\n'.join(f'<li><span class="status_item">{k}</span>: {v}</li>' for k, v in status_dict.items())
+        content = '\n'.join(f'<li><span class="status-key">{k}</span>: {v}</li>' for k, v in status_dict.items())
         return f'<ul class="status">\n{content}\n</ul>'
 
 
 class HTMLTableStatusView(TextStatusView):
     def __call__(self, world: World, player: int, theme: Theme):
         status_dict = self.status_dict(world, player)
-        content = '\n'.join(f'<tr><td class="status_item">{k}</td><td>{v}</td></tr>' for k, v in status_dict.items())
+        content = '\n'.join(f'<tr><td class="status-key">{k}</td><td>{v}</td></tr>' for k, v in status_dict.items())
         return f'<table class="status">\n{content}\n</table>'

@@ -131,6 +131,49 @@ class Fancy(Theme):
         super().__init__({e: Symbol(char=c) for e, c in FANCY_MAP.items()})
 
 
+class Desert(Theme):
+    def __init__(self):
+        orange = '#DF6453'
+        teal = '#2599A3'
+        yellow = '#D9AB57'
+        browns = [
+            '#4C453C',
+            '#B0A193',
+            '#DAD1C1',
+            '#F3E6D9',
+        ]
+
+        color_map = {
+            Entity.PLAYER: orange,
+            Entity.GOAL: teal,
+            Entity.KEY: yellow,
+            Entity.TIMER_RESET: yellow,
+            Entity.SWITCH_PRESSABLE: yellow,
+            Entity.SWITCH_UNPRESSABLE: browns[1],
+            Entity.FOG: browns[1],
+            Entity.ENEMY: browns[0],
+            Entity.WALL: browns[1],
+            Entity.SPIKE: browns[0],
+            Entity.BLOCK: browns[1],
+            Entity.DOOR: browns[1],
+            Entity.EMPTY: browns[2],
+            Entity.GOAL_REACHED: orange,
+            Entity.PLAYER_DIED: orange,
+        }
+        background_map = {k: browns[3] for k in color_map.keys()}
+        background_map[Entity.WALL] = browns[1]
+
+        def create_symbol(e: Entity):
+            return Symbol(
+                char=FANCY_MAP[e],
+                color=color_map[e],
+                background=background_map[e],
+                bold=e != Entity.EMPTY,
+            )
+
+        super().__init__({e: create_symbol(e) for e in ASCII_MAP.keys()})
+
+
 class Purple(Theme):
     def __init__(self):
         ramp = [
@@ -178,7 +221,9 @@ class Vaporwave(Theme):
     def __init__(self):
         teal = '#68CFD9'
         pink = '#EA7DB9'
-        orange = '#F5BB8B'
+        # orange = '#F5BB8B'
+        # orange = "#F4AD73"
+        orange = '#F39237'
         light_purple = '#DBB3DA'
         dark_purple = '#9878C9'
         cream = '#FAEEE6'
@@ -201,13 +246,10 @@ class Vaporwave(Theme):
             Entity.PLAYER_DIED: orange,
         }
         background_map = {k: cream for k in color_map.keys()}
-        background_map[Entity.WALL] = light_purple
-        background_map[Entity.BLOCK] = light_purple
-        background_map[Entity.DOOR] = light_purple
 
         def create_symbol(e: Entity):
             return Symbol(
-                char=ASCII_MAP[e],
+                char=FANCY_MAP[e],
                 color=color_map[e],
                 background=background_map[e],
                 bold=e != Entity.EMPTY,
@@ -303,60 +345,13 @@ class Icy(Theme):
         super().__init__({e: create_symbol(e) for e in ASCII_MAP.keys()})
 
 
-class Desert(Theme):
-    def __init__(self):
-        orange = '#DF6453'
-        teal = '#2599A3'
-        yellow = '#D9AB57'
-        browns = [
-            '#4C453C',
-            '#B0A193',
-            '#DAD1C1',
-            '#F3E6D9',
-        ]
-
-        color_map = {
-            Entity.PLAYER: orange,
-            Entity.GOAL: teal,
-            Entity.KEY: yellow,
-            Entity.TIMER_RESET: yellow,
-            Entity.SWITCH_PRESSABLE: yellow,
-            Entity.SWITCH_UNPRESSABLE: browns[1],
-            Entity.FOG: browns[1],
-            Entity.ENEMY: browns[0],
-            Entity.WALL: browns[1],
-            Entity.SPIKE: browns[0],
-            Entity.BLOCK: browns[1],
-            Entity.DOOR: browns[1],
-            Entity.EMPTY: browns[2],
-            Entity.GOAL_REACHED: orange,
-            Entity.PLAYER_DIED: orange,
-        }
-        background_map = {k: browns[3] for k in color_map.keys()}
-        background_map[Entity.WALL] = browns[1]
-
-        def create_symbol(e: Entity):
-            return Symbol(
-                char=FANCY_MAP[e],
-                color=color_map[e],
-                background=background_map[e],
-                bold=e != Entity.EMPTY,
-            )
-
-        super().__init__({e: create_symbol(e) for e in ASCII_MAP.keys()})
-
-
 class ARC(Theme):
     def __init__(self):
         teal = '#46B3C7'
-        # pink = '#D24A9F'
-
         pink = '#E545A8'
         yellow = '#F9DD4A'
         dark = '#191919'
         medium = '#3E3E3E'
-        # medium = '#4F4F4F'
-        # light = '#999999'
         light = '#707070'
 
         color_map = {
