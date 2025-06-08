@@ -152,6 +152,59 @@ class DemoWorld_02(World):
         self.initialize(text_grid=text_grid, char_map=char_map)
 
 
+@register_world('causeway')
+class Causeway(World):
+    def layout(self):
+        text_grid = """
+        ##############
+        #.....####...#
+        #...00####.X.#
+        #...0.####...#
+        ###...2..3...#
+        ###.@.########
+        ##############
+        """
+        char_map = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+            '0': self.add_block,
+            '^': self.add_spike,
+            '~': self.add_fog,
+            '1': lambda x, y: self.add_patrol_enemy(x, y, delta=(0, -1)),
+            '2': lambda x, y: self.add_patrol_enemy(x, y, delta=(1, 0)),
+            '3': lambda x, y: self.add_patrol_enemy(x, y, delta=(-1, 0)),
+        }
+        self.initialize(text_grid=text_grid, char_map=char_map)
+
+    def solve(self):
+        return [
+            Action.UP,
+            Action.RIGHT,
+            Action.UP,
+            Action.UP,
+            Action.LEFT,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.NONE,
+            Action.NONE,
+            Action.NONE,
+            Action.NONE,
+            Action.NONE,
+            Action.NONE,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.UP,
+            Action.UP,
+            Action.RIGHT,
+        ]
+
+
 @register_world('fog')
 class FogWorld_01(World):
     def layout(self):
@@ -178,6 +231,26 @@ class FogWorld_01(World):
             '2': lambda x, y: self.add_patrol_enemy(x, y, delta=(-1, 0)),
         }
         self.initialize(text_grid=text_grid, char_map=char_map)
+
+    def solve(self):
+        return [
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.DOWN,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.UP,
+        ]
 
 
 @register_world('switch')
@@ -578,6 +651,26 @@ class ChaseWorld_01(World):
             'e': self.add_chase_enemy
         }
         self.initialize(text_grid=text_grid, char_map=char_map)
+
+    def solve(self):
+        return [
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.UP,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.UP,
+            Action.UP,
+            Action.LEFT,
+            Action.UP,
+            Action.UP,
+            Action.UP,
+            Action.UP,
+            Action.UP,
+            Action.LEFT,
+        ]
 
 
 @register_world('chase-test')

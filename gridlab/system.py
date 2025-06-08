@@ -105,6 +105,9 @@ class ActionSystem:
             return
 
         for ent, action in self.action_queue:
+            if action == Action.NONE:
+                continue
+
             dx, dy = action.move_delta
             move(self.em, self.grid, ent, dx, dy)
 
@@ -205,15 +208,38 @@ class PatrolAISystem:
         active_map = self.em.get(Active)
         ai_map = self.em.get(PatrolAI)
 
+        flip_dir: dict[int, PatrolAI] = {}
+
         for ent, ai in ai_map.items():
             if ent not in active_map:
                 continue
 
             dx, dy = ai.delta
             if not move(self.em, self.grid, ent, dx, dy):
-                dx, dy = -dx, -dy
-                move(self.em, self.grid, ent, dx, dy)
-                ai.delta = dx, dy
+                flip_dir[ent] = ai
+
+        for ent, ai in flip_dir.items():
+            dx, dy = ai.delta
+            dx, dy = -dx, -dy
+            move(self.em, self.grid, ent, dx, dy)
+            ai.delta = dx, dy
+
+    # def __call__(self):
+    #     if self.state.is_finished:
+    #         return
+
+    #     active_map = self.em.get(Active)
+    #     ai_map = self.em.get(PatrolAI)
+
+    #     for ent, ai in ai_map.items():
+    #         if ent not in active_map:
+    #             continue
+
+    #         dx, dy = ai.delta
+    #         if not move(self.em, self.grid, ent, dx, dy):
+    #             dx, dy = -dx, -dy
+    #             move(self.em, self.grid, ent, dx, dy)
+    #             ai.delta = dx, dy
 
 
 class FixedAISystem:

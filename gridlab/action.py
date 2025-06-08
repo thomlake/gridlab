@@ -6,6 +6,7 @@ class Action(StrEnum):
     DOWN = 'down'
     LEFT = 'left'
     RIGHT = 'right'
+    NONE = 'none'
 
     @property
     def move_delta(self):
@@ -27,6 +28,7 @@ _ALIASES = {
     'd': 'down',
     'l': 'left',
     'r': 'right',
+    'n': 'none',
 }
 
 _MOVE_DELTA_MAP = {
@@ -34,4 +36,5 @@ _MOVE_DELTA_MAP = {
     Action.DOWN: (0, 1),
     Action.LEFT: (-1, 0),
     Action.RIGHT: (1, 0),
+    Action.NONE: (0, 0),
 }
