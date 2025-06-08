@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from gridlab.entity import Entity
 from gridlab.utils import grid_neighbors
