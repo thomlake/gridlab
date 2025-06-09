@@ -1,6 +1,5 @@
 __version__ = "0.1.0"
 
-import gridlab.view  # noqa: F401
 from gridlab.action import Action  # noqa: F401
 from gridlab.entity import Entity  # noqa: F401
 from gridlab.runner import run_stdio  # noqa: F401

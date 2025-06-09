@@ -368,6 +368,7 @@ class SpikeWorld_01(World):
             Action.RIGHT,
             Action.RIGHT,
             Action.RIGHT,
+            Action.RIGHT,
             Action.DOWN,
             Action.DOWN,
         ]

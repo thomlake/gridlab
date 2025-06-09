@@ -90,6 +90,19 @@ def teleport(em: EntityManager, grid: Grid, ent: int, x: int, y: int) -> bool:
     return True
 
 
+class PositionDeltaSystem:
+    def __init__(self, em: EntityManager, state: State,):
+        self.em = em
+        self.state = state
+
+    def __call__(self):
+        if self.state.is_finished:
+            return
+
+        position_delta_map = self.em.get(PositionDelta)
+        position_delta_map.clear()
+
+
 class ActionSystem:
     def __init__(self, em: EntityManager, state: State, grid: Grid):
         self.em = em

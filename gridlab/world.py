@@ -141,6 +141,7 @@ class World:
         chase_ai_system = system.ChaseAISystem(self.em, self.state, grid=self.grid)
         snake_ai_system = system.SnakeAISystem(self.em, self.state, grid=self.grid)
 
+        position_delta_system = system.PositionDeltaSystem(self.em, self.state)
         death_system = system.DeathSystem(self.em, self.state, player=self.player)
         goal_system = system.GoalSystem(self.em, self.state, player=self.player)
         timer_system = system.TimerSystem(self.em, self.state, player=self.player)
@@ -149,6 +150,7 @@ class World:
 
         self.action_system = action_system
         self.systems = [
+            position_delta_system,
             action_system,
             death_system,
             door_system,

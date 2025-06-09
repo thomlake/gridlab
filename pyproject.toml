@@ -16,4 +16,4 @@ dynamic = ["version"]
 version = {attr = "gridlab.__version__"}
 
 [tool.setuptools]
-packages = ["gridlab"]
+packages = ["gridlab", "gridlab.view"]

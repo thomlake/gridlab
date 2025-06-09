@@ -5,7 +5,7 @@ from gridlab.world_builder import create_world, world_names
 
 
 VERIFICATION_FAILED_TEMPLATE = """
-{status}
+{message}
 Taken: {taken}
 Remain: {remain}
 
@@ -23,10 +23,15 @@ Remain: {remain}
 
 
 class VerificationFailed(Exception):
-    def __init__(self, status: str, taken: list[Action], remain: list[Action], views: dict[str, str]):
+    def __init__(self, message: str, taken: list[Action], remain: list[Action], views: dict[str, str]):
         taken = ', '.join(taken)
         remain = ', '.join(remain)
-        message = VERIFICATION_FAILED_TEMPLATE.format(status=status, taken=taken, remain=remain, **views)
+        message = VERIFICATION_FAILED_TEMPLATE.format(
+            message=message,
+            taken=taken,
+            remain=remain,
+            **views,
+        )
         super().__init__(message)
 
 
