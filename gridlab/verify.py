@@ -1,4 +1,5 @@
 from gridlab.action import Action
+from gridlab.view.pipeline import ViewPipeline
 from gridlab.view.pipeline_builder import build_view_pipeline
 from gridlab.world import World
 from gridlab.world_builder import create_world, world_names

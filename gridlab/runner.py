@@ -66,3 +66,59 @@ def run_stdio(
 
     action_list = '\n'.join(f'    Action.{action.name},' for action in taken)
     print(f'World: {world.name}\n\n{status}\n\nactions = [\n{action_list}\n]')
+
+
+def render_rollout(
+        world: World | str,
+        pipeline: ViewPipeline | None = None,
+        max_width: int = 200,
+        sep: str = ' → ',
+        actions: list[Action] | None = None,
+):
+    if not isinstance(world, World):
+        world = create_world(world)
+
+    if not pipeline:
+        pipeline = build_view_pipeline(mode='text', theme='ascii')
+
+    if not actions:
+        actions = world.solve()
+
+    frames = [pipeline.render(world)['grid']]
+    for action in actions:
+        world.step(action=action)
+        frames.append(pipeline.render(world)['grid'])
+
+    first_frame_lines = frames[0].split('\n')
+    n_rows = len(first_frame_lines)
+    n_cols = len(first_frame_lines[0])
+    n_per_line = max_width // (n_cols + len(sep))
+    text_blocks = []
+
+    while frames:
+        first_frame, *frames_rest = frames[:n_per_line]
+        frames = frames[n_per_line:]
+
+        actions_block = actions[:n_per_line]
+        actions = actions[n_per_line:]
+
+        merged_lines = first_frame.split('\n')
+        for frame in frames_rest:
+            lines = frame.split('\n')
+            assert len(merged_lines) == len(lines) == n_rows
+            for i, line in enumerate(lines):
+                merged_lines[i] = f'{merged_lines[i]}{sep}{line}'
+
+        header_parts = [action.upper().center(n_cols) for action in actions_block]
+        header = (' ' * len(sep)).join(header_parts)
+        # header = sep.join(header_parts)
+
+        if text_blocks:
+            # Not the first block
+            header = ' ' * len(sep.lstrip()) + header
+            merged_lines = [f'{sep}{line}'.lstrip() for line in merged_lines]
+
+        block = '\n'.join([header] + merged_lines)
+        text_blocks.append(block)
+
+    return '\n'.join(text_blocks)
