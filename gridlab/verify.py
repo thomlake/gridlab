@@ -1,5 +1,4 @@
 from gridlab.action import Action
-from gridlab.view.pipeline import ViewPipeline
 from gridlab.view.pipeline_builder import build_view_pipeline
 from gridlab.world import World
 from gridlab.world_builder import create_world, world_names
@@ -62,36 +61,38 @@ def verify_solution(world: World | str):
     raise VerificationFailed(status, taken, remain, views)
 
 
-def verify_all_solutions(report: bool = True) -> dict[str, dict[str, str]]:
-    successes: dict[str, str] = {}
-    failures: dict[str, str] = {}
+def verify_all_solutions() -> dict[str, tuple[bool, str]]:
+    results: dict[str, tuple[bool, str]] = {}
 
     names = world_names()
     for name in names:
         try:
             verify_solution(world=name)
         except NotImplementedError:
-            failures[name] = 'Solve not implemented'
+            results[name] = False, 'Solve not implemented'
         except VerificationFailed:
-            failures[name] = 'Invalid solution'
+            results[name] = False, 'Invalid solution'
         except Exception as e:
-            failures[name] = f'Unexpected error {type(e)}("{e}")'
+            results[name] = False, f'Unexpected error {type(e)}("{e}")'
         else:
-            successes[name] = 'ok'
+            results[name] = True, 'ok'
 
-    if report:
-        total = len(names)
-        success_rate = len(successes) / total
-        failure_rate = len(failures) / total
+    return results
 
-        print(f'Success {success_rate:.2%} ({len(successes)} of {total})')
-        for name, msg in successes.items():
-            print(f'✅ {name}: {msg}')
 
-        print()
+def display_verification_statuses():
+    results = verify_all_solutions()
+    successes = {name: msg for name, (ok, msg) in results.items() if ok}
+    failures = {name: msg for name, (ok, msg) in results.items() if not ok}
+    success_rate = len(successes) / len(results)
+    failure_rate = len(failures) / len(results)
 
-        print(f'Failure {failure_rate:.2%} ({len(failures)} of {total})')
-        for name, msg in failures.items():
-            print(f'⛔️ {name}: {msg}')
+    print(f'Success {success_rate:.2%} ({len(successes)} of {len(results)})')
+    for name, msg in successes.items():
+        print(f'✅ {name}: {msg}')
 
-    return {'success': successes, 'failure': failures}
+    print()
+
+    print(f'Failure {failure_rate:.2%} ({len(failures)} of {len(results)})')
+    for name, msg in failures.items():
+        print(f'⛔️ {name}: {msg}')

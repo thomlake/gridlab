@@ -71,7 +71,7 @@ def run_stdio(
 def render_rollout(
         world: World | str,
         pipeline: ViewPipeline | None = None,
-        max_width: int = 200,
+        max_width: int = 75,
         sep: str = ' → ',
         actions: list[Action] | None = None,
 ):

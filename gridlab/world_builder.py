@@ -293,6 +293,220 @@ class SwitchWorld_02(World):
         self.add_switch_toggle((2, 1), (4, 1), [(3, 1)], [(5, 2)])
 
 
+@register_world('kite')
+class KiteWorld(World):
+    def layout(self):
+        text_grid = """
+        #############
+        #.......#####
+        #.......#.X.#
+        #...0000#...#
+        #..0......e.#
+        #...0000#####
+        #.@......####
+        #........####
+        #############
+        """
+
+        char_map = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+            '0': self.add_block,
+            'e': self.add_chase_enemy,
+        }
+        self.initialize(text_grid=text_grid, char_map=char_map)
+
+    def solve(self):
+        return [
+            Action.UP,
+            Action.RIGHT,
+            Action.UP,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.UP,
+            Action.UP,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.DOWN,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.UP,
+            Action.UP,
+        ]
+
+
+@register_world('switch-push')
+class SwitchPushWorld(World):
+    def layout(self):
+        text_grid = """
+        ##############
+        #......#######
+        #...000#######
+        #..0......####
+        #...000##^####
+        #......##.####
+        #........=..@#
+        #......##.####
+        #...000##^####
+        #..0....e...##
+        #...000###..##
+        #......###.X##
+        ##############
+        """
+
+        def add_toggle(x: int, y: int):
+            return self.add_switch_toggle(
+                (x, y),
+                (x - 2, y),
+                active_switchable_positions=[
+                    (x - 1, y),
+                ],
+                inactive_switchable_positions=[
+                    (x, y - 1),
+                    (x, y + 1),
+                ],
+            )
+
+        char_map = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+            '0': self.add_block,
+            '^': self.add_spike,
+            'e': self.add_chase_enemy,
+            '=': add_toggle,
+        }
+        self.initialize(text_grid=text_grid, char_map=char_map)
+
+
+@register_world('switch-medium')
+class SwitchMediumWorld(World):
+    def layout(self):
+        text_grid = """
+        ###################
+        ####.......########
+        ####..0..00########
+        ####...00..########
+        ####...0.e....#####
+        ####......0##^#####
+        #............=0.@.#
+        #.....#######^#####
+        #...00#######.#####
+        #..0..e.........###
+        #00.00#######.X.###
+        #.....#######...###
+        ###################
+        """
+
+        def add_toggle(x: int, y: int):
+            return self.add_switch_toggle(
+                (x, y),
+                (x - 1, y),
+                inactive_switchable_positions=[
+                    (x, y - 1),
+                    (x, y + 1),
+                    # (x + 1, y),
+                ],
+            )
+
+        char_map = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+            '0': self.add_block,
+            '^': self.add_spike,
+            'e': self.add_chase_enemy,
+            '=': add_toggle,
+        }
+        self.initialize(text_grid=text_grid, char_map=char_map)
+
+    def solve(self):
+        return [
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.DOWN,
+            Action.UP,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.UP,
+            Action.LEFT,
+            Action.LEFT,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.LEFT,
+            Action.UP,
+            Action.UP,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.UP,
+            Action.UP,
+            Action.DOWN,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.UP,
+            Action.DOWN,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.LEFT,
+            Action.DOWN,
+            Action.DOWN,
+            Action.DOWN,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+        ]
+
+
 @register_world('blockade')
 class BlockadeWorld(World):
     def layout(self):
@@ -717,7 +931,6 @@ class ChaseWorld_03(World):
             'e': self.add_chase_enemy
         }
         self.initialize(text_grid=text_grid, char_map=char_map)
-        # self.add_chase_enemy(6, 2)
 
     def solve(self):
         raise NotImplementedError()
