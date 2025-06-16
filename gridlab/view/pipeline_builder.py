@@ -6,7 +6,7 @@ from gridlab.view.pipeline import ViewPipeline
 from gridlab.view.theme import Theme
 
 
-class Mode(StrEnum):
+class ViewMode(StrEnum):
     TEXT = 'text'
     TERMINAL = 'terminal'
     HTML = 'html'
@@ -16,37 +16,37 @@ class Mode(StrEnum):
 def build_view_pipeline(
         *,
         theme: Theme | str | None = None,
-        mode: Mode = Mode.TEXT,
+        mode: ViewMode = ViewMode.TEXT,
         full_legend: bool = False,
 ):
     if theme is None:
         theme = {
-            Mode.TEXT: 'ascii',
-            Mode.TERMINAL: 'desert',
-            Mode.HTML: 'desert',
-            Mode.HTML_TABLE: 'desert',
+            ViewMode.TEXT: 'ascii',
+            ViewMode.TERMINAL: 'desert',
+            ViewMode.HTML: 'desert',
+            ViewMode.HTML_TABLE: 'desert',
         }[mode]
 
     views: dict[str, View]
-    if mode == Mode.TEXT:
+    if mode == ViewMode.TEXT:
         views = {
             'legend': legend.TextLegendView(full=full_legend),
             'status': status.TextStatusView(),
             'grid': grid.TextGridView(),
         }
-    elif mode == Mode.TERMINAL:
+    elif mode == ViewMode.TERMINAL:
         views = {
             'legend': legend.TerminalLegendView(full=full_legend),
             'status': status.TerminalStatusView(),
             'grid': grid.TerminalGridView(),
         }
-    elif mode == Mode.HTML:
+    elif mode == ViewMode.HTML:
         views = {
             'legend': legend.HTMLLegendView(full=full_legend),
             'status': status.HTMLStatusView(),
             'grid': grid.HTMLGridView(),
         }
-    elif mode == Mode.HTML_TABLE:
+    elif mode == ViewMode.HTML_TABLE:
         views = {
             'legend': legend.HTMLTableLegendView(full=full_legend),
             'status': status.HTMLTableStatusView(),

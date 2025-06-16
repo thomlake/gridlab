@@ -88,8 +88,7 @@ Output:
 ############
 ```
 
-Actions are simple string values `up`, `down`, `left`, and `right`.
-Single characters, `udlr`, also work.
+Actions are simple string values `up`, `down`, `left`, `right`, or `none` (single characters `udlrn` also work).
 
 ```python
 world.step(action='up')

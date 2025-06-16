@@ -14,7 +14,7 @@ class Action(StrEnum):
 
     @classmethod
     def _missing_(cls, value):
-        value = value.lower()
+        value = value.lower()  # type: ignore
         value = _ALIASES.get(value, value)
         for member in cls:
             if member == value:

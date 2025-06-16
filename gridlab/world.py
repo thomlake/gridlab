@@ -1,49 +1,73 @@
+import string
 from typing import Callable
 
 from gridlab import component, system
 from gridlab.action import Action
+from gridlab.difficulty import Difficulty
 from gridlab.entity import Entity, EntityManager
 from gridlab.grid import Grid
+from gridlab.layer import Layer
 from gridlab.state import State
 
 
 class World:
+    # Metadata
     name: str = '???'
+    difficulty: Difficulty = Difficulty.UNCLASSIFIED
+    entity_types: list[Entity] = []
+
+    # State
     state: State
     em: EntityManager
-    grid: Grid
-    action_system: system.ActionSystem
-    systems: list[Callable[[], None]]
     turn: int = 1
+
+    # Private
+    _grid: Grid | None
+    _systems: list[Callable[[], None]] | None
+    _action_system: system.ActionSystem | None
     _player: int | None
 
     def __init__(self):
         self.reset()
+
+    def build(self) -> None:
+        """Initialize the world and add entities."""
+        raise NotImplementedError()
 
     def solve(self) -> list[Action]:
         """Return the list of moves that result in success."""
         raise NotImplementedError()
 
     @property
-    def char_map(self) -> dict[str, None | Callable[[int, int], int]]:
-        return {
-            '.': None,
-            '#': self.add_wall,
-            '@': self.add_player,
-            'X': self.add_goal,
-            '0': self.add_block,
-            'K': self.add_key,
-            '+': self.add_door,
-            'T': self.add_timer_reset,
-            '^': self.add_spike,
-        }
+    def grid(self):
+        if self._grid is None:
+            raise ValueError('grid not set!')
+
+        return self._grid
+
+    @property
+    def systems(self):
+        if self._systems is None:
+            raise ValueError('systems not set!')
+
+        return self._systems
+
+    @property
+    def action_system(self):
+        if self._action_system is None:
+            raise ValueError('action_system not set!')
+
+        return self._action_system
 
     @property
     def player(self):
         if self._player is None:
-            raise ValueError('player not registered!')
+            raise ValueError('player not set!')
 
         return self._player
+
+    def create_grid(self, width: int, height: int):
+        self._grid = Grid(width, height)
 
     def register_player(self, ent: int):
         if self._player is not None:
@@ -54,40 +78,13 @@ class World:
     def reset(self):
         self.state = State()
         self.em = EntityManager()
-        self.grid = None
-        self.action_system = None
-        self.systems = []
         self.turn = 1
+        self._grid = None
+        self._systems = None
+        self._action_system = None
         self._player = None
-        self.layout()
+        self.build()
         self.setup_systems()
-
-    def create_grid(self, width: int, height: int):
-        self.grid = Grid(width, height)
-
-    def initialize(
-            self,
-            text_grid: str,
-            char_map: dict[str, None | Callable[[int, int], int]] | None = None,
-            player_chars: list[str] | None = None,
-    ):
-        lines = [line.strip() for line in text_grid.strip().split('\n')]
-        w, h = len(lines[0]), len(lines)
-        self.create_grid(w, h)
-
-        char_map = char_map or self.char_map
-        player_chars = player_chars or ['@']
-        positions = [(c, (x, y)) for y, line in enumerate(lines) for x, c in enumerate(line)]
-
-        for c, (x, y) in positions:
-            if c in player_chars:
-                char_map[c](x, y)
-
-        for c, (x, y) in positions:
-            if c not in player_chars:
-                method = char_map[c]
-                if method is not None:
-                    method(x, y)
 
     def step(
             self,
@@ -148,8 +145,8 @@ class World:
         door_system = system.DoorSystem(self.em, self.state)
         switch_system = system.SwitchSystem(self.em, self.state)
 
-        self.action_system = action_system
-        self.systems = [
+        self._action_system = action_system
+        self._systems = [
             position_delta_system,
             action_system,
             death_system,
@@ -166,6 +163,8 @@ class World:
 
     def add_player(self, x: int, y: int) -> int:
         """Add the player at the given position and return its id."""
+        assert Entity.PLAYER in self.entity_types, 'missing PLAYER'
+
         e = self.em.create()
         self.register_player(e)
 
@@ -179,6 +178,8 @@ class World:
 
     def add_goal(self, x: int, y: int) -> int:
         """Add a goal at the given position and return its id."""
+        assert Entity.GOAL in self.entity_types, 'missing GOAL'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.GOAL))
         self.em.add_component(e, component.Active())
@@ -201,6 +202,8 @@ class World:
 
     def add_timer_reset(self, x: int, y: int) -> int:
         """Add a timer reset at the given position and return its id."""
+        assert Entity.TIMER_RESET in self.entity_types, 'missing TIMER_RESET'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.TIMER_RESET))
         self.em.add_component(e, component.Active())
@@ -213,6 +216,8 @@ class World:
 
         Keys can be used to unlock doors.
         """
+        assert Entity.KEY in self.entity_types, 'missing KEY'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.KEY))
         self.em.add_component(e, component.Active())
@@ -225,6 +230,8 @@ class World:
 
         Fog hides entities at the same location.
         """
+        assert Entity.FOG in self.entity_types, 'missing FOG'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.FOG))
         self.em.add_component(e, component.Active())
@@ -236,6 +243,8 @@ class World:
         """Add a wall at the given position and return its id.
 
         Walls cannot be moved through by any entities."""
+        assert Entity.WALL in self.entity_types, 'missing WALL'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.WALL))
         self.em.add_component(e, component.Active())
@@ -248,6 +257,8 @@ class World:
 
         Doors cannot be moved through until they are unlocked by an entity with a key.
         """
+        assert Entity.DOOR in self.entity_types, 'missing DOOR'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.DOOR))
         self.em.add_component(e, component.Active())
@@ -260,6 +271,8 @@ class World:
         """Add a block at the given position and return its id.
 
         Blocks can be pushed by the player if the path is clear, but cannot be moved through."""
+        assert Entity.BLOCK in self.entity_types, 'missing BLOCK'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.BLOCK))
         self.em.add_component(e, component.Active())
@@ -273,6 +286,8 @@ class World:
 
         Spikes kill the player on contact but do not block other entities.
         """
+        assert Entity.SPIKE in self.entity_types, 'missing SPIKE'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.SPIKE))
         self.em.add_component(e, component.Active())
@@ -293,6 +308,8 @@ class World:
 
         Chase enemies move toward the player at each step using the A* algorithm.
         """
+        assert Entity.ENEMY in self.entity_types, 'missing ENEMY'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.ENEMY))
         self.em.add_component(e, component.Active())
@@ -317,6 +334,8 @@ class World:
         Patrol enemies move by delta each step tick.
         If a movement fails, they move in the opposite direction.
         """
+        assert Entity.ENEMY in self.entity_types, 'missing ENEMY'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.ENEMY))
         self.em.add_component(e, component.Active())
@@ -331,6 +350,8 @@ class World:
 
         Fixed enemies cycle through a list or pre-specified list of movements.
         """
+        assert Entity.ENEMY in self.entity_types, 'missing ENEMY'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.ENEMY))
         self.em.add_component(e, component.Active())
@@ -345,6 +366,8 @@ class World:
 
         Mirror enemies copy or mirror the player movement along a given axis.
         """
+        assert Entity.ENEMY in self.entity_types, 'missing ENEMY'
+
         e = self.em.create()
         self.em.add_component(e, component.Identity(Entity.ENEMY))
         self.em.add_component(e, component.Active())
@@ -360,18 +383,19 @@ class World:
             delta: tuple[int, int] | None = None
     ) -> tuple[int, ...]:
         """Add multiple enemies that move as if connected and return their ids."""
+        assert Entity.ENEMY in self.entity_types, 'missing ENEMY'
+
         entities = [self.em.create() for _ in positions]
-        entities.append(None)
         head = entities[0]
         for i, (x, y) in enumerate(positions):
             e = entities[i]
-            e_next = entities[i + 1]
+            next = entities[i + 1] if i + 1 < len(entities) else None
             self.em.add_component(e, component.Identity(Entity.ENEMY))
             self.em.add_component(e, component.Active())
             self.em.add_component(e, component.Position(x, y))
             self.em.add_component(e, component.Solid(allow=(self.player,)))
             self.em.add_component(e, component.Deadly())
-            self.em.add_component(e, component.SnakeAI(target=self.player, head=head, next=e_next, delta=delta))
+            self.em.add_component(e, component.SnakeAI(target=self.player, head=head, next=next, delta=delta))
 
         return tuple(entities)
 
@@ -380,7 +404,9 @@ class World:
             position: tuple[int, int],
             active_switchable_positions: list[tuple[int, int]] | None = None,
             inactive_switchable_positions: list[tuple[int, int]] | None = None,
-    ) -> dict[str, list[int]]:
+    ):
+        assert Entity.SWITCH_PRESSABLE in self.entity_types, 'missing SWITCH_PRESSABLE'
+
         active_switchable_positions = active_switchable_positions or []
         inactive_switchable_positions = inactive_switchable_positions or []
         if not (active_switchable_positions or inactive_switchable_positions):
@@ -410,7 +436,10 @@ class World:
             position2: tuple[int, int],
             active_switchable_positions: list[tuple[int, int]] | None = None,
             inactive_switchable_positions: list[tuple[int, int]] | None = None,
-    ) -> dict[str, list[int]]:
+    ):
+        assert Entity.SWITCH_PRESSABLE in self.entity_types, 'missing SWITCH_PRESSABLE'
+        assert Entity.SWITCH_UNPRESSABLE in self.entity_types, 'missing SWITCH_UNPRESSABLE'
+
         active_switchable_positions = active_switchable_positions or []
         inactive_switchable_positions = inactive_switchable_positions or []
         if not (active_switchable_positions or inactive_switchable_positions):
@@ -463,3 +492,71 @@ class World:
         sections = [make_method_stub(attr) for attr in attrs]
         methods_stubs = '\n\n'.join(sections)
         return f'class {cls.__name__}:\n{methods_stubs}'
+
+    def _preprocess_build_layer(self, text: str):
+        layer = Layer(text)
+        if self._grid is None:
+            self.create_grid(layer.width, layer.height)
+        else:
+            assert layer.width == self.grid.width
+            assert layer.height == self.grid.height
+
+        return layer
+
+    def populate(self, text: str, initializers: dict[str, Callable[[int, int], int]]):
+        layer = self._preprocess_build_layer(text)
+        processed_chars: set[str] = set()
+        for char, method in initializers.items():
+            processed_chars.add(char)
+            if method is None:
+                continue
+
+            for x, y in layer.positions_map.get(char, []):
+                method(x, y)
+
+        skipped_chars = [c for c in layer.positions_map.keys() if c not in processed_chars]
+        if skipped_chars:
+            raise ValueError(f"unprocessed chars: {', '.join(skipped_chars)}")
+
+    def populate_switches(self, text: str):
+        layer = self._preprocess_build_layer(text)
+        processed_chars: set[str] = set()
+
+        switch_chars = [str(i) for i in range(1, 10)]
+        active_chars = string.ascii_uppercase[:len(switch_chars)]
+        inactive_chars = string.ascii_lowercase[:len(switch_chars)]
+
+        for i, c_switch in enumerate(switch_chars):
+            switch_positions = layer.positions_map.get(c_switch)
+            if not switch_positions:
+                break
+
+            switch_position, = switch_positions
+
+            c_active = active_chars[i]
+            active_positions = layer.positions_map.get(c_active, [])
+
+            c_inactive = inactive_chars[i]
+            inactive_positions = layer.positions_map.get(c_inactive, [])
+
+            self.add_switch(
+                position=switch_position,
+                active_switchable_positions=active_positions,
+                inactive_switchable_positions=inactive_positions,
+            )
+
+            processed_chars.update([c_switch, c_active, c_inactive])
+
+        def is_skipped_char(c: str):
+            if c in processed_chars:
+                return False
+
+            return (
+                c in switch_chars or
+                c in active_chars or
+                c in inactive_chars
+            )
+
+        skipped_chars = [c for c in layer.positions_map.keys() if is_skipped_char(c)]
+        if skipped_chars:
+            raise ValueError(f"unprocessed chars: {', '.join(skipped_chars)}")

@@ -13,6 +13,8 @@ class TextLegendView(View):
     def legend_items(self, world: World, theme: Theme) -> list[tuple[Entity, Symbol]]:
         if self.full:
             entity_types = list(Entity)
+        elif world.entity_types:
+            entity_types = world.entity_types
         else:
             identity_map: dict[int, Identity] = world.em.get(Identity)
             entity_types = set()

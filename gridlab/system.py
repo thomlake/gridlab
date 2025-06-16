@@ -7,7 +7,6 @@ from gridlab.component import (
     Door,
     Key,
     KeyCollector,
-    FixedAI,
     Goal,
     Identity,
     MirrorAI,
@@ -30,10 +29,6 @@ from gridlab.state import State
 
 
 def move(em: EntityManager, grid: Grid, ent: int, dx: int, dy: int) -> bool:
-    old_position_delta = em.get(PositionDelta).get(ent)
-    if old_position_delta:
-        em.remove_component(ent, old_position_delta)
-
     active_map = em.get(Active)
     position_map = em.get(Position)
     pusher_map = em.get(Pusher)
@@ -72,10 +67,6 @@ def move(em: EntityManager, grid: Grid, ent: int, dx: int, dy: int) -> bool:
 
 
 def teleport(em: EntityManager, grid: Grid, ent: int, x: int, y: int) -> bool:
-    old_position_delta = em.get(PositionDelta).get(ent)
-    if old_position_delta:
-        em.remove_component(ent, old_position_delta)
-
     position_map = em.get(Position)
     current = position_map[ent]
 
@@ -108,9 +99,9 @@ class ActionSystem:
         self.em = em
         self.state = state
         self.grid = grid
-        self.action_queue: list[tuple[str, Action]] = []
+        self.action_queue: list[tuple[int, Action]] = []
 
-    def add_actions(self, actions: list[tuple[str, Action]]):
+    def add_actions(self, actions: list[tuple[int, Action]]):
         self.action_queue.extend(actions)
 
     def __call__(self):
@@ -221,7 +212,7 @@ class PatrolAISystem:
         active_map = self.em.get(Active)
         ai_map = self.em.get(PatrolAI)
 
-        flip_dir: dict[int, PatrolAI] = {}
+        change_dir_map: dict[int, PatrolAI] = {}
 
         for ent, ai in ai_map.items():
             if ent not in active_map:
@@ -229,52 +220,13 @@ class PatrolAISystem:
 
             dx, dy = ai.delta
             if not move(self.em, self.grid, ent, dx, dy):
-                flip_dir[ent] = ai
+                change_dir_map[ent] = ai
 
-        for ent, ai in flip_dir.items():
+        for ent, ai in change_dir_map.items():
             dx, dy = ai.delta
             dx, dy = -dx, -dy
             move(self.em, self.grid, ent, dx, dy)
             ai.delta = dx, dy
-
-    # def __call__(self):
-    #     if self.state.is_finished:
-    #         return
-
-    #     active_map = self.em.get(Active)
-    #     ai_map = self.em.get(PatrolAI)
-
-    #     for ent, ai in ai_map.items():
-    #         if ent not in active_map:
-    #             continue
-
-    #         dx, dy = ai.delta
-    #         if not move(self.em, self.grid, ent, dx, dy):
-    #             dx, dy = -dx, -dy
-    #             move(self.em, self.grid, ent, dx, dy)
-    #             ai.delta = dx, dy
-
-
-class FixedAISystem:
-    def __init__(self, em: EntityManager, state: State, grid: Grid):
-        self.em = em
-        self.state = state
-        self.grid = grid
-
-    def __call__(self):
-        if self.state.is_finished:
-            return
-
-        active_map = self.em.get(Active)
-        ai_map = self.em.get(FixedAI)
-
-        for ent, ai in ai_map.items():
-            if ent not in active_map:
-                continue
-
-            dx, dy = ai.moves[ai.move_index]
-            move(self.em, self.grid, ent, dx, dy)
-            ai.move_index = (ai.move_index + 1) % len(ai.moves)
 
 
 class SnakeAISystem:
@@ -301,7 +253,7 @@ class SnakeAISystem:
 
             return grid
 
-        def shift(ent: int, x: int, y: int):
+        def shift(ent: int | None, x: int, y: int):
             while ent:
                 ai = ai_map[ent]
                 position = position_map[ent]
@@ -378,14 +330,14 @@ class DoorSystem:
                 continue
 
             collector_pos = position_map[collector_ent]
-            keys_remove = set()
+            keys_remove: list[int] = []
             for key_ent, _ in key_map.items():
                 if key_ent not in active_map:
                     continue
 
                 key_pos = position_map[key_ent]
                 if key_pos == collector_pos:
-                    keys_remove.add(key_ent)
+                    keys_remove.append(key_ent)
                     collector.count += 1
 
             self.em.remove_all(keys_remove)
@@ -393,7 +345,7 @@ class DoorSystem:
             if collector.count < 1:
                 continue
 
-            doors_remove = set()
+            doors_remove: list[int] = []
             for door_ent, _ in door_map.items():
                 if door_ent not in active_map:
                     continue
@@ -401,7 +353,7 @@ class DoorSystem:
                 door_pos = position_map[door_ent]
                 if collector_pos.is_adjacent(door_pos):
                     collector.count -= 1
-                    doors_remove.add(door_ent)
+                    doors_remove.append(door_ent)
 
             self.em.remove_all(doors_remove)
 
@@ -427,14 +379,14 @@ class TimerSystem:
         position_map = self.em.get(Position)
         player_pos = position_map[self.player]
 
-        timer_resets_remove = set()
+        timer_resets_remove: list[int] = []
         for ent, _ in timer_reset_map.items():
             if ent not in active_map:
                 continue
 
             timer_reset_pos = position_map[ent]
             if player_pos == timer_reset_pos:
-                timer_resets_remove.add(ent)
+                timer_resets_remove.append(ent)
 
         self.em.remove_all(timer_resets_remove)
 
@@ -516,7 +468,7 @@ class SwitchSystem:
                     switch.pressed = False
                     switch.pressable = True
                     id_map[switch_ent].type = Entity.SWITCH_PRESSABLE
-                elif triggered_switches.get(switch_ent):
+                elif triggered_switches[switch_ent]:
                     switch.pressed = True
                     switch.pressable = False
                     id_map[switch_ent].type = Entity.SWITCH_UNPRESSABLE

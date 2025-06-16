@@ -1,7 +1,16 @@
-from typing import Type
+from typing import Type, TypedDict
 
 from gridlab.action import Action
+from gridlab.difficulty import Difficulty, get_difficulty_score
+from gridlab.entity import Entity
 from gridlab.world import World
+
+
+class WorldMetadata(TypedDict):
+    name: str
+    difficulty: Difficulty
+    difficulty_score: int
+    entity_types: list[Entity]
 
 
 WORLD_REGISTRY: dict[str, Type[World]] = {}
@@ -11,16 +20,14 @@ def world_names():
     return list(WORLD_REGISTRY.keys())
 
 
-def register_world(name: str):
-    if name in WORLD_REGISTRY:
-        raise ValueError(f'duplicate world name: {name}')
-
-    def inner(world_class: Type[World]):
-        world_class.name = name
-        WORLD_REGISTRY[name] = world_class
-        return world_class
-
-    return inner
+def world_metadata(name: str) -> WorldMetadata:
+    world_class = WORLD_REGISTRY[name]
+    return {
+        'name': world_class.name,
+        'difficulty': world_class.difficulty,
+        'difficulty_score': get_difficulty_score(world_class.difficulty),
+        'entity_types': world_class.entity_types,
+    }
 
 
 def create_world(name: str) -> World:
@@ -29,9 +36,26 @@ def create_world(name: str) -> World:
     return world
 
 
-@register_world('empty')
+def register_world(world_class: Type[World]):
+    name = world_class.name
+    if name in WORLD_REGISTRY:
+        raise ValueError(f'duplicate world name: {name}')
+
+    WORLD_REGISTRY[name] = world_class
+    return world_class
+
+
+@register_world
 class EmptyWorld(World):
-    def layout(self):
+    name = 'empty'
+    difficulty = Difficulty.TRIVIAL
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+    ]
+
+    def build(self):
         self.create_grid(3, 3)
         self.add_player(0, 2)
         self.add_goal(2, 0)
@@ -45,10 +69,21 @@ class EmptyWorld(World):
         ]
 
 
-@register_world('demo')
+@register_world
 class DemoWorld(World):
-    def layout(self):
-        text_grid = """
+    name = 'demo'
+    difficulty = Difficulty.MODERATE
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.SPIKE,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         ############
         ####.#######
         ##..0..^.X##
@@ -56,7 +91,7 @@ class DemoWorld(World):
         ##.@.......#
         ############
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -65,7 +100,7 @@ class DemoWorld(World):
             '^': self.add_spike,
             'e': self.add_chase_enemy,
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
@@ -88,10 +123,21 @@ class DemoWorld(World):
         ]
 
 
-@register_world('demo1')
+@register_world
 class DemoWorld_01(World):
-    def layout(self):
-        text_grid = """
+    name = 'demo1'
+    difficulty = Difficulty.UNCLASSIFIED
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.SPIKE,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         ####################
         ###..1...#...#######
         #...^..^..0...######
@@ -102,7 +148,7 @@ class DemoWorld_01(World):
         ################...#
         ####################
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -111,17 +157,28 @@ class DemoWorld_01(World):
             '^': self.add_spike,
             '1': lambda x, y: self.add_patrol_enemy(x, y, delta=(0, -1)),
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
 
-@register_world('demo2')
+@register_world
 class DemoWorld_02(World):
-    def layout(self):
-        text_grid = """
+    name = 'demo2'
+    difficulty = Difficulty.UNCLASSIFIED
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+        Entity.FOG,
+    ]
+
+    def build(self):
+        text = """
         ####################
         #......~112~.......#
         #......~1~~~.......#
-        #......#~~~~.......#
+        #..@...#~~~~.......#
         #......#~#.........#
         #......#~#.........#
         #......#...........#
@@ -137,7 +194,7 @@ class DemoWorld_02(World):
             self.add_fog(x, y)
             self.add_chase_enemy(x, y)
 
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -149,34 +206,41 @@ class DemoWorld_02(World):
             '2': add_custom_2,
             '?': lambda x, y: self.add_patrol_enemy(x, y, delta=(0, -1)),
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
 
-@register_world('causeway')
+@register_world
 class Causeway(World):
-    def layout(self):
-        text_grid = """
+    name = 'causeway'
+    difficulty = Difficulty.EASY
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         ##############
         #.....####...#
         #...00####.X.#
         #...0.####...#
-        ###...2..3...#
+        ###...1..2...#
         ###.@.########
         ##############
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
             'X': self.add_goal,
             '0': self.add_block,
-            '^': self.add_spike,
-            '~': self.add_fog,
-            '1': lambda x, y: self.add_patrol_enemy(x, y, delta=(0, -1)),
-            '2': lambda x, y: self.add_patrol_enemy(x, y, delta=(1, 0)),
-            '3': lambda x, y: self.add_patrol_enemy(x, y, delta=(-1, 0)),
+            '1': lambda x, y: self.add_patrol_enemy(x, y, delta=(1, 0)),
+            '2': lambda x, y: self.add_patrol_enemy(x, y, delta=(-1, 0)),
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
@@ -205,98 +269,20 @@ class Causeway(World):
         ]
 
 
-@register_world('fog')
-class FogWorld_01(World):
-    def layout(self):
-        text_grid = """
-        #############
-        #@..~~~######
-        ####~~~######
-        ###1~.~######
-        ####~~~######
-        ####~.~2#####
-        ####~~~##.X.#
-        ####~~~.....#
-        #############
-        """
-        char_map = {
-            '.': None,
-            '#': self.add_wall,
-            '@': self.add_player,
-            'X': self.add_goal,
-            '0': self.add_block,
-            '^': self.add_spike,
-            '~': self.add_fog,
-            '1': lambda x, y: self.add_patrol_enemy(x, y, delta=(1, 0)),
-            '2': lambda x, y: self.add_patrol_enemy(x, y, delta=(-1, 0)),
-        }
-        self.initialize(text_grid=text_grid, char_map=char_map)
-
-    def solve(self):
-        return [
-            Action.RIGHT,
-            Action.RIGHT,
-            Action.RIGHT,
-            Action.DOWN,
-            Action.RIGHT,
-            Action.DOWN,
-            Action.DOWN,
-            Action.RIGHT,
-            Action.DOWN,
-            Action.DOWN,
-            Action.DOWN,
-            Action.RIGHT,
-            Action.RIGHT,
-            Action.RIGHT,
-            Action.RIGHT,
-            Action.UP,
-        ]
-
-
-@register_world('switch')
-class SwitchWorld_01(World):
-    def layout(self):
-        text_grid = """
-        #########
-        #.......#
-        #.@.#.X.#
-        #...#...#
-        #########
-        """
-        char_map = {
-            '.': None,
-            '#': self.add_wall,
-            '@': self.add_player,
-            'X': self.add_goal,
-        }
-        self.initialize(text_grid=text_grid, char_map=char_map)
-        self.add_switch((1, 1), [(4, 1)])
-
-
-@register_world('switch2')
-class SwitchWorld_02(World):
-    def layout(self):
-        text_grid = """
-        #########
-        #.......#
-        #@.X....#
-        #.......#
-        #########
-        """
-        char_map = {
-            '.': None,
-            '#': self.add_wall,
-            '@': self.add_player,
-            'X': self.add_goal,
-        }
-        self.initialize(text_grid=text_grid, char_map=char_map)
-        self.add_switch_toggle((2, 1), (4, 1), [(3, 1)], [(5, 2)])
-
-
-@register_world('kite')
+@register_world
 class KiteWorld(World):
-    def layout(self):
-        text_grid = """
+    name = 'kite'
+    difficulty = Difficulty.EASY
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         #############
         #.......#####
         #.......#.X.#
@@ -308,7 +294,7 @@ class KiteWorld(World):
         #############
         """
 
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -316,7 +302,7 @@ class KiteWorld(World):
             '0': self.add_block,
             'e': self.add_chase_enemy,
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
@@ -345,10 +331,254 @@ class KiteWorld(World):
         ]
 
 
-@register_world('switch-push')
+@register_world
+class FogWorld_01(World):
+    name = 'fog'
+    difficulty = Difficulty.MODERATE
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+        Entity.FOG,
+    ]
+
+    def build(self):
+        text = """
+        #############
+        #@..~~~######
+        ####~~~######
+        ###1~.~######
+        ####~~~######
+        ####~.~2#####
+        ####~~~##.X.#
+        ####~~~.....#
+        #############
+        """
+        initializers = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+            '0': self.add_block,
+            '^': self.add_spike,
+            '~': self.add_fog,
+            '1': lambda x, y: self.add_patrol_enemy(x, y, delta=(1, 0)),
+            '2': lambda x, y: self.add_patrol_enemy(x, y, delta=(-1, 0)),
+        }
+        self.populate(text=text, initializers=initializers)
+
+    def solve(self):
+        return [
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.DOWN,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.UP,
+        ]
+
+
+@register_world
+class SwitchWorld_01(World):
+    name = 'switch'
+    difficulty = Difficulty.EASY
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+        Entity.SWITCH_PRESSABLE,
+    ]
+
+    def build(self):
+        text = """
+        #########
+        #.......#
+        #.@.#.X.#
+        #...#...#
+        #########
+        """
+        initializers = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+        }
+        self.populate(text=text, initializers=initializers)
+
+        switch = """
+        #########
+        #1..A...#
+        #.@.#.X.#
+        #...#...#
+        #########
+        """
+        self.populate_switches(text=switch)
+        self.add_switch((1, 1), [(4, 1)])
+
+    def solve(self):
+        return [
+            Action.UP,
+            Action.LEFT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.RIGHT,
+        ]
+
+
+@register_world
+class SwitchWorld_02(World):
+    name = 'switch2'
+    difficulty = Difficulty.UNCLASSIFIED
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.SWITCH_PRESSABLE,
+        Entity.SWITCH_UNPRESSABLE,
+    ]
+
+    def build(self):
+        text = """
+        #########
+        #.......#
+        #@.X....#
+        #.......#
+        #########
+        """
+        initializers = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+        }
+        self.populate(text=text, initializers=initializers)
+        self.add_switch_toggle((2, 1), (4, 1), [(3, 1)], [(5, 2)])
+
+
+@register_world
+class SwitchTrickWorld(World):
+    name = 'switch-trick-world'
+    difficulty = Difficulty.MODERATE
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.SWITCH_PRESSABLE,
+    ]
+
+    def build(self):
+        text = """
+        ###########
+        #.........#
+        #..@.....X#
+        #.........#
+        ###########
+        """
+        initializers = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+        }
+        self.populate(text=text, initializers=initializers)
+
+        switch_1 = """
+        ###########
+        #aaaA1.#AA#
+        #aaaA#A#AX#
+        #aaaaaaaAA#
+        ###########
+        """
+        self.populate_switches(text=switch_1)
+
+        switch_2 = """
+        ###########
+        #aaa...####
+        #1aa#####X#
+        #.......###
+        ###########
+        """
+        self.populate_switches(text=switch_2)
+
+        switch_3 = """
+        ###########
+        #..a...####
+        #..a#A###X#
+        #..a...1###
+        ###########
+        """
+        self.populate_switches(text=switch_3)
+
+        switch_4 = """
+        ###########
+        #1.....A###
+        #...###A#X#
+        #.......###
+        ###########
+        """
+        self.populate_switches(text=switch_4)
+
+    def solve(self) -> list[Action]:
+        return [
+            Action.UP,
+            Action.LEFT,
+            Action.LEFT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.DOWN,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.UP,
+            Action.UP,
+            Action.LEFT,
+            Action.LEFT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+        ]
+
+
+@register_world
 class SwitchPushWorld(World):
-    def layout(self):
-        text_grid = """
+    name = 'switch-push'
+    difficulty = Difficulty.MODERATE
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+        Entity.SPIKE,
+        Entity.SWITCH_PRESSABLE,
+        Entity.SWITCH_UNPRESSABLE,
+    ]
+
+    def build(self):
+        text = """
         ##############
         #......#######
         #...000#######
@@ -377,7 +607,7 @@ class SwitchPushWorld(World):
                 ],
             )
 
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -387,13 +617,26 @@ class SwitchPushWorld(World):
             'e': self.add_chase_enemy,
             '=': add_toggle,
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
 
-@register_world('switch-medium')
+@register_world
 class SwitchMediumWorld(World):
-    def layout(self):
-        text_grid = """
+    name = 'switch-medium'
+    difficulty = Difficulty.HARD
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+        Entity.SPIKE,
+        Entity.SWITCH_PRESSABLE,
+        Entity.SWITCH_UNPRESSABLE,
+    ]
+
+    def build(self):
+        text = """
         ###################
         ####.......########
         ####..0..00########
@@ -420,7 +663,7 @@ class SwitchMediumWorld(World):
                 ],
             )
 
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -430,7 +673,7 @@ class SwitchMediumWorld(World):
             'e': self.add_chase_enemy,
             '=': add_toggle,
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
@@ -507,10 +750,20 @@ class SwitchMediumWorld(World):
         ]
 
 
-@register_world('blockade')
+@register_world
 class BlockadeWorld(World):
-    def layout(self):
-        text_grid = """
+    name = 'blockade'
+    difficulty = Difficulty.EASY
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         ##########
         #........#
         #..##..#.#
@@ -521,7 +774,7 @@ class BlockadeWorld(World):
         #@.......#
         ##########
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -529,13 +782,26 @@ class BlockadeWorld(World):
             '1': self.add_chase_enemy,
             '2': lambda x, y: self.add_patrol_enemy(x, y, delta=(0, -1)),
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
 
-@register_world('door')
+@register_world
 class DoorWorld(World):
-    def layout(self):
-        text_grid = """
+    name = 'door'
+    difficulty = Difficulty.TRIVIAL
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.KEY,
+        Entity.DOOR,
+        Entity.ENEMY,
+        Entity.SPIKE,
+    ]
+
+    def build(self):
+        text = """
         #########
         #@...K..#
         #.......#
@@ -543,7 +809,7 @@ class DoorWorld(World):
         #...X...#
         #########
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -552,13 +818,36 @@ class DoorWorld(World):
             'K': self.add_key,
             '+': self.add_door,
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
+
+    def solve(self):
+        return [
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.LEFT,
+            Action.DOWN,
+            Action.DOWN,
+        ]
 
 
-@register_world('spike')
+@register_world
 class SpikeWorld_01(World):
-    def layout(self):
-        text_grid = """
+    name = 'spike'
+    difficulty = Difficulty.TRIVIAL
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+        Entity.SPIKE,
+    ]
+
+    def build(self):
+        text = """
         #######
         #..^..#
         #.....#
@@ -566,14 +855,14 @@ class SpikeWorld_01(World):
         #@.^.X#
         #######
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
             'X': self.add_goal,
             '^': self.add_spike,
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
@@ -588,24 +877,35 @@ class SpikeWorld_01(World):
         ]
 
 
-@register_world('timer')
+@register_world
 class TimerWorld_01(World):
-    def layout(self):
-        text_grid = """
+    name = 'timer'
+    difficulty = Difficulty.EASY
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+        Entity.TIMER_RESET,
+    ]
+
+    def build(self):
+        text = """
         #######
         #..T..#
         #@...X#
         #.....#
         #######
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
             'X': self.add_goal,
             'T': self.add_timer_reset,
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
         self.add_timer(limit=3)
 
     def solve(self):
@@ -619,10 +919,20 @@ class TimerWorld_01(World):
         ]
 
 
-@register_world('mirror')
+@register_world
 class MirrorWorld_01(World):
-    def layout(self):
-        text_grid = """
+    name = 'mirror'
+    difficulty = Difficulty.EASY
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         #######
         #X.e..#
         #...#.#
@@ -630,14 +940,14 @@ class MirrorWorld_01(World):
         #..@..#
         #######
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
             'X': self.add_goal,
             'e': self.add_mirror_enemy,
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
@@ -653,10 +963,20 @@ class MirrorWorld_01(World):
         ]
 
 
-@register_world('mirror-block')
+@register_world
 class MirrorBlockWorld(World):
-    def layout(self):
-        text_grid = """
+    name = 'mirror-block'
+    difficulty = Difficulty.MODERATE
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         #######
         #X.e..#
         #.....#
@@ -664,7 +984,7 @@ class MirrorBlockWorld(World):
         #..@..#
         #######
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -672,7 +992,7 @@ class MirrorBlockWorld(World):
             '0': self.add_block,
             'e': self.add_mirror_enemy,
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
@@ -692,10 +1012,21 @@ class MirrorBlockWorld(World):
         ]
 
 
-@register_world('mirror-block-flip')
+@register_world
 class MirrorBlockFlipWorld(World):
-    def layout(self):
-        text_grid = """
+    name = 'mirror-block-flip'
+    difficulty = Difficulty.MODERATE
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+        Entity.SPIKE,
+    ]
+
+    def build(self):
+        text = """
         #######
         #..@..#
         #...0##
@@ -703,7 +1034,7 @@ class MirrorBlockFlipWorld(World):
         #X.e..#
         #######
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -712,7 +1043,7 @@ class MirrorBlockFlipWorld(World):
             '^': self.add_spike,
             'e': lambda x, y: self.add_mirror_enemy(x, y, True, True),
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
@@ -732,10 +1063,20 @@ class MirrorBlockFlipWorld(World):
         ]
 
 
-@register_world('patrol')
+@register_world
 class PatrolWorld_01(World):
-    def layout(self):
-        text_grid = """
+    name = 'patrol'
+    difficulty = Difficulty.EASY
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         #####
         #.X.#
         #0.e#
@@ -743,7 +1084,7 @@ class PatrolWorld_01(World):
         #.@.#
         #####
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -751,7 +1092,7 @@ class PatrolWorld_01(World):
             '0': self.add_block,
             'e': lambda x, y: self.add_patrol_enemy(x, y, delta=(1, 0)),
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
@@ -769,10 +1110,21 @@ class PatrolWorld_01(World):
         ]
 
 
-@register_world('patrol+')
+@register_world
 class PatrolWorld_Advanced(World):
-    def layout(self):
-        text_grid = """
+    name = 'patrol-advanced'
+    difficulty = Difficulty.MODERATE
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+        Entity.SPIKE,
+    ]
+
+    def build(self):
+        text = """
         ###########
         #.....3...#
         #..^.2..#.#
@@ -780,7 +1132,7 @@ class PatrolWorld_Advanced(World):
         #...###.X^#
         ###########
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -791,28 +1143,48 @@ class PatrolWorld_Advanced(World):
             '2': lambda x, y: self.add_patrol_enemy(x, y, delta=(-1, 0)),
             '3': lambda x, y: self.add_patrol_enemy(x, y, delta=(0, -1)),
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
-            (-1, 0),
-            (0, 1),
-            (0, 1),
-            (0, -1),
-            (0, -1),
-            (1, 0),
-            (1, 0),
-            (0, 1),
-            (0, 1),
-            (0, 1),
-            (-1, 0),
+            Action.UP,
+            Action.UP,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.NONE,
+            Action.NONE,
+            Action.NONE,
+            Action.NONE,
+            Action.DOWN,
+            Action.DOWN,
+            Action.UP,
+            Action.UP,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.DOWN,
+            Action.LEFT,
+            Action.DOWN,
         ]
 
 
-@register_world('snake')
+@register_world
 class SnakeWorld_01(World):
-    def layout(self):
-        text_grid = """
+    name = 'snake'
+    difficulty = Difficulty.UNCLASSIFIED
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         #####
         #..X#
         #...#
@@ -826,26 +1198,36 @@ class SnakeWorld_01(World):
         #@..#
         #####
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
             'X': self.add_goal,
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
         self.add_snake_enemy(
-            [
+            (
                 (1, 4), (2, 4), (3, 4),
                 (3, 3), (2, 3), (1, 3),
                 (1, 2), (2, 2), (3, 2),
-            ],
+            ),
         )
 
 
-@register_world('chase')
+@register_world
 class ChaseWorld_01(World):
-    def layout(self):
-        text_grid = """
+    name = 'chase'
+    difficulty = Difficulty.EASY
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         #########
         #.......#
         #...X...#
@@ -858,14 +1240,14 @@ class ChaseWorld_01(World):
         #@......#
         #########
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
             'X': self.add_goal,
             'e': self.add_chase_enemy
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
@@ -888,13 +1270,23 @@ class ChaseWorld_01(World):
         ]
 
 
-@register_world('chase-test')
+@register_world
 class ChaseWorld_02(World):
-    def layout(self):
-        text_grid = """
+    name = 'chase-test'
+    difficulty = Difficulty.UNCLASSIFIED
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         #########
         #......X#
-        #.......#
+        #...e...#
         #.......#
         #.......#
         #.......#
@@ -904,17 +1296,33 @@ class ChaseWorld_02(World):
         #@......#
         #########
         """
-        self.initialize(text_grid=text_grid)
-        self.add_chase_enemy(4, 2)
+        initializers = {
+            '.': None,
+            '#': self.add_wall,
+            '@': self.add_player,
+            'X': self.add_goal,
+            'e': self.add_chase_enemy
+        }
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         raise NotImplementedError()
 
 
-@register_world('chase-push')
+@register_world
 class ChaseWorld_03(World):
-    def layout(self):
-        text_grid = """
+    name = 'chase-push'
+    difficulty = Difficulty.MODERATE
+    entity_types = [
+        Entity.PLAYER,
+        Entity.GOAL,
+        Entity.WALL,
+        Entity.BLOCK,
+        Entity.ENEMY,
+    ]
+
+    def build(self):
+        text = """
         #########
         #...0...#
         #@..0.e.#
@@ -922,7 +1330,7 @@ class ChaseWorld_03(World):
         #...000X#
         #########
         """
-        char_map = {
+        initializers = {
             '.': None,
             '#': self.add_wall,
             '@': self.add_player,
@@ -930,7 +1338,7 @@ class ChaseWorld_03(World):
             '0': self.add_block,
             'e': self.add_chase_enemy
         }
-        self.initialize(text_grid=text_grid, char_map=char_map)
+        self.populate(text=text, initializers=initializers)
 
     def solve(self):
         raise NotImplementedError()
