@@ -1125,12 +1125,13 @@ class PatrolWorld_Advanced(World):
 
     def build(self):
         text = """
-        ###########
-        #.....3...#
-        #..^.2..#.#
-        #.@..^.0.1#
-        #...###.X^#
-        ###########
+        #########
+        #...2...#
+        #.@...#.#
+        #....0.1#
+        #####.X##
+        #####2.##
+        #########
         """
         initializers = {
             '.': None,
@@ -1140,34 +1141,31 @@ class PatrolWorld_Advanced(World):
             '0': self.add_block,
             '^': self.add_spike,
             '1': lambda x, y: self.add_patrol_enemy(x, y, delta=(1, 0)),
-            '2': lambda x, y: self.add_patrol_enemy(x, y, delta=(-1, 0)),
-            '3': lambda x, y: self.add_patrol_enemy(x, y, delta=(0, -1)),
+            '2': lambda x, y: self.add_patrol_enemy(x, y, delta=(0, -1)),
         }
         self.populate(text=text, initializers=initializers)
 
     def solve(self):
         return [
+            Action.RIGHT,
+            Action.DOWN,
+            Action.NONE,
+            Action.RIGHT,
+            Action.RIGHT,
             Action.UP,
             Action.UP,
             Action.RIGHT,
-            Action.RIGHT,
-            Action.RIGHT,
-            Action.RIGHT,
-            Action.RIGHT,
             Action.NONE,
-            Action.NONE,
-            Action.NONE,
-            Action.NONE,
-            Action.DOWN,
-            Action.DOWN,
-            Action.UP,
-            Action.UP,
-            Action.RIGHT,
-            Action.RIGHT,
-            Action.DOWN,
-            Action.DOWN,
+            Action.LEFT,
+            Action.LEFT,
             Action.LEFT,
             Action.DOWN,
+            Action.DOWN,
+            Action.NONE,
+            Action.RIGHT,
+            Action.RIGHT,
+            Action.DOWN,
+            Action.RIGHT,
         ]
 
 

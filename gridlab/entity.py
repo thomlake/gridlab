@@ -26,6 +26,32 @@ class Entity(StrEnum):
     PLAYER_DIED = 'player_died'
 
 
+ENTITY_DESCRIPTION = {
+    Entity.PLAYER: 'The player (you)',
+    Entity.GOAL: 'Successfully complete the level by occupying this tile',
+    Entity.KEY: 'Used to unlock doors',
+    Entity.TIMER_RESET: 'Resets the move countdown',
+    Entity.SWITCH_PRESSABLE: 'Causes an environmental change when pressed',
+    Entity.SWITCH_UNPRESSABLE: 'An inactive switch.',
+    # Entity.PATROL_ENEMY: 'Moves in a linear path until impeded, and then moves in the opposite direction',
+    # Entity.CHASE_ENEMY: 'Moves toward the player at each step using the A* algorithm to avoid obstacles',
+    # Entity.MIRROR_ENEMY: 'Copies or mirrors the player movement along each axis',
+    Entity.ENEMY: 'Moves around the environment and kills the player if they occupies the same tile',
+    Entity.SPIKE: 'Kills the player if they move onto the tile, but does not block the movement of other entities',
+    Entity.BLOCK: 'Cannot be moved through by any entity, but can be pushed by the player if the path is clear',
+    Entity.DOOR: 'Cannot be moved through until it is unlocked by an entity with a key',
+    Entity.WALL: 'Cannot be moved through by any entity',
+    Entity.FOG: 'Hides entities at this location',
+    Entity.EMPTY: 'An empty tile',
+    Entity.GOAL_REACHED: 'Signifies the player reached the goal',
+    Entity.PLAYER_DIED: 'Signifies the player died',
+}
+
+
+def describe_entity(entity: Entity):
+    return ENTITY_DESCRIPTION[entity]
+
+
 C = TypeVar('C')
 
 

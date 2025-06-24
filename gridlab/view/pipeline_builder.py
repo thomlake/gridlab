@@ -16,9 +16,13 @@ class ViewMode(StrEnum):
 def build_view_pipeline(
         *,
         theme: Theme | str | None = None,
-        mode: ViewMode = ViewMode.TEXT,
+        mode: ViewMode | str = ViewMode.TEXT,
         full_legend: bool = False,
+        verbose_legend: bool = False,
 ):
+    if not isinstance(mode, ViewMode):
+        mode = ViewMode(mode)
+
     if theme is None:
         theme = {
             ViewMode.TEXT: 'ascii',
@@ -30,25 +34,25 @@ def build_view_pipeline(
     views: dict[str, View]
     if mode == ViewMode.TEXT:
         views = {
-            'legend': legend.TextLegendView(full=full_legend),
+            'legend': legend.TextLegendView(full=full_legend, verbose=verbose_legend),
             'status': status.TextStatusView(),
             'grid': grid.TextGridView(),
         }
     elif mode == ViewMode.TERMINAL:
         views = {
-            'legend': legend.TerminalLegendView(full=full_legend),
+            'legend': legend.TerminalLegendView(full=full_legend, verbose=verbose_legend),
             'status': status.TerminalStatusView(),
             'grid': grid.TerminalGridView(),
         }
     elif mode == ViewMode.HTML:
         views = {
-            'legend': legend.HTMLLegendView(full=full_legend),
+            'legend': legend.HTMLLegendView(full=full_legend, verbose=verbose_legend),
             'status': status.HTMLStatusView(),
             'grid': grid.HTMLGridView(),
         }
     elif mode == ViewMode.HTML_TABLE:
         views = {
-            'legend': legend.HTMLTableLegendView(full=full_legend),
+            'legend': legend.HTMLTableLegendView(full=full_legend, verbose=verbose_legend),
             'status': status.HTMLTableStatusView(),
             'grid': grid.HTMLTableGridView(),
         }

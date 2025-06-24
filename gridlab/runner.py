@@ -111,7 +111,6 @@ def render_rollout(
 
         header_parts = [action.upper().center(n_cols) for action in actions_block]
         header = (' ' * len(sep)).join(header_parts)
-        # header = sep.join(header_parts)
 
         if text_blocks:
             # Not the first block
