@@ -36,7 +36,7 @@ ENTITY_DESCRIPTION = {
     # Entity.PATROL_ENEMY: 'Moves in a linear path until impeded, and then moves in the opposite direction',
     # Entity.CHASE_ENEMY: 'Moves toward the player at each step using the A* algorithm to avoid obstacles',
     # Entity.MIRROR_ENEMY: 'Copies or mirrors the player movement along each axis',
-    Entity.ENEMY: 'Moves around the environment and kills the player if they occupies the same tile',
+    Entity.ENEMY: 'Moves around the environment and kills the player if they occupy the same tile',
     Entity.SPIKE: 'Kills the player if they move onto the tile, but does not block the movement of other entities',
     Entity.BLOCK: 'Cannot be moved through by any entity, but can be pushed by the player if the path is clear',
     Entity.DOOR: 'Cannot be moved through until it is unlocked by an entity with a key',

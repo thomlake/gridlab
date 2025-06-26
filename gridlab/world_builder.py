@@ -11,6 +11,7 @@ class WorldMetadata(TypedDict):
     difficulty: Difficulty
     difficulty_score: int
     entity_types: list[Entity]
+    solution_length: int | None
 
 
 WORLD_REGISTRY: dict[str, Type[World]] = {}
@@ -20,13 +21,24 @@ def world_names():
     return list(WORLD_REGISTRY.keys())
 
 
-def world_metadata(name: str) -> WorldMetadata:
-    world_class = WORLD_REGISTRY[name]
+def world_metadata(world: str | World) -> WorldMetadata:
+    if not isinstance(world, World):
+        world = create_world(world)
+
+    difficulty_score = get_difficulty_score(world.difficulty)
+    try:
+        solution = world.solve()
+    except NotImplementedError:
+        solution_length = None
+    else:
+        solution_length = len(solution)
+
     return {
-        'name': world_class.name,
-        'difficulty': world_class.difficulty,
-        'difficulty_score': get_difficulty_score(world_class.difficulty),
-        'entity_types': world_class.entity_types,
+        'name': world.name,
+        'difficulty': world.difficulty,
+        'difficulty_score': difficulty_score,
+        'entity_types': world.entity_types,
+        'solution_length': solution_length,
     }
 
 
@@ -796,7 +808,6 @@ class DoorWorld(World):
         Entity.BLOCK,
         Entity.KEY,
         Entity.DOOR,
-        Entity.ENEMY,
         Entity.SPIKE,
     ]
 
